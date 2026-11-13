@@ -1,0 +1,1596 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="description" content="WildGuard: solar wildlife deterrent sensors for roads and gardens.">
+<title>WildGuard</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Overpass:wght@400;600;800;900&family=Overpass+Mono:wght@400;600&family=Public+Sans:ital,wght@0,400;0,500;0,600;1,400&display=swap">
+<style>
+/* Layout: highway-signage system. Full-bleed bands, a sticky route-marker nav, content on a 1180px rail. */
+:root{
+  --bg:#edf1ec; --surface:#f8faf6; --surface-2:#e3e9e2; --ink:#13201a; --muted:#56655d; --line:#cdd7ce;
+  --forest:#1d4a37; --forest-ink:#f3f7f1; --sign:#f2b705; --sign-ink:#17160f; --beacon:#ff9d1c; --alert:#b4401a; --good:#1f7a4d;
+  --s-garden:#1f8a5b; --s-road:#d98b00; --s-ni:#2a78d6;
+  --night:#0b1310; --night-2:#14211c; --night-ink:#dfe9e2; --night-muted:#8fa298;
+  --f-display:"Overpass","Arial Narrow",Arial,sans-serif;
+  --f-body:"Public Sans","Segoe UI",system-ui,sans-serif;
+  --f-mono:"Overpass Mono",ui-monospace,Menlo,monospace;
+  --rail:1180px; --r:6px;
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --bg:#0d1512; --surface:#131e1a; --surface-2:#1a2823; --ink:#e4ece6; --muted:#97a89f; --line:#27372f;
+  --forest:#173d2d; --forest-ink:#e9f2ec; --sign:#f2b705; --sign-ink:#17160f; --beacon:#ffa733; --alert:#e5764a; --good:#4fbf8a;
+  --s-garden:#2f9e6a; --s-road:#c98500; --s-ni:#3987e5; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#0d1512; --surface:#131e1a; --surface-2:#1a2823; --ink:#e4ece6; --muted:#97a89f; --line:#27372f;
+  --forest:#173d2d; --forest-ink:#e9f2ec; --sign:#f2b705; --sign-ink:#17160f; --beacon:#ffa733; --alert:#e5764a; --good:#4fbf8a;
+  --s-garden:#2f9e6a; --s-road:#c98500; --s-ni:#3987e5; color-scheme:dark}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth;scroll-padding-top:64px}
+@media (prefers-reduced-motion:reduce){html{scroll-behavior:auto}*{animation:none!important;transition:none!important}}
+body{background:var(--bg);color:var(--ink);font-family:var(--f-body);font-size:16px;line-height:1.55;margin:0}
+body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);z-index:60;background:var(--forest)}
+.wrap{max-width:var(--rail);margin:0 auto;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+h1,h2,h3,h4{font-family:var(--f-display);line-height:1.08;text-wrap:balance;margin:0}
+h2{font-size:clamp(30px,4.2vw,46px);font-weight:900;letter-spacing:-.01em}
+h3{font-size:21px;font-weight:800}
+h4{font-size:15px;font-weight:800;letter-spacing:.06em;text-transform:uppercase}
+p{margin:0}
+.eyebrow{font-family:var(--f-mono);font-size:12.5px;letter-spacing:.14em;text-transform:uppercase;color:var(--muted)}
+.lede{font-size:18px;color:var(--muted);max-width:66ch}
+.mono{font-family:var(--f-mono);font-variant-numeric:tabular-nums}
+.num{font-variant-numeric:tabular-nums}
+a{color:inherit}
+button,select,input{font:inherit;color:inherit}
+:focus-visible{outline:3px solid var(--sign);outline-offset:2px}
+
+/* nav */
+.nav{position:sticky;top:env(safe-area-inset-top,0px);z-index:50;background:var(--forest);color:var(--forest-ink);border-bottom:3px solid var(--sign)}
+.nav .wrap{display:flex;align-items:center;gap:18px;height:56px}
+.brand{display:flex;align-items:center;gap:10px;font-family:var(--f-display);font-weight:900;font-size:20px;letter-spacing:.02em;text-decoration:none;white-space:nowrap}
+.brand svg{flex:none}
+.nav ul{list-style:none;margin:0;padding:0;display:flex;gap:4px;overflow-x:auto;scrollbar-width:none;min-width:0}
+.nav ul::-webkit-scrollbar{display:none}
+.nav a.l{display:block;padding:6px 10px;border-radius:4px;text-decoration:none;font-family:var(--f-display);font-weight:600;font-size:14.5px;white-space:nowrap;opacity:.82}
+.nav a.l:hover,.nav a.l.on{opacity:1;background:rgba(255,255,255,.1)}
+
+/* sections */
+section{padding-block:76px}
+section.alt{background:var(--surface)}
+.sec-head{display:grid;gap:12px;margin-bottom:36px}
+.grid{display:grid;gap:20px}
+.g2{grid-template-columns:repeat(2,minmax(0,1fr))}
+.g3{grid-template-columns:repeat(3,minmax(0,1fr))}
+.g4{grid-template-columns:repeat(4,minmax(0,1fr))}
+@media (max-width:900px){.g3,.g4{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media (max-width:640px){.g2,.g3,.g4{grid-template-columns:minmax(0,1fr)}}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);padding:22px;min-width:0}
+section.alt .card{background:var(--bg)}
+.card p+p{margin-top:10px}
+.muted{color:var(--muted)}
+.small{font-size:14px}
+.tag{display:inline-flex;align-items:center;gap:6px;font-family:var(--f-mono);font-size:11.5px;letter-spacing:.08em;text-transform:uppercase;padding:3px 8px;border-radius:3px;background:var(--surface-2);color:var(--ink);white-space:nowrap}
+.tag.q{background:var(--forest);color:var(--forest-ink)}
+.tag.b{background:var(--alert);color:#fff}
+.tag.cr{background:var(--sign);color:var(--sign-ink)}
+
+/* hero */
+.hero{background:var(--night);color:var(--night-ink);padding-block:64px 40px;position:relative;overflow:hidden}
+.hero::after{content:"";position:absolute;left:0;right:0;bottom:0;height:10px;background:repeating-linear-gradient(90deg,var(--sign) 0 60px,transparent 60px 100px);opacity:.9}
+.hero-grid{display:grid;grid-template-columns:minmax(0,1.25fr) minmax(0,1fr);gap:40px;align-items:center}
+@media (max-width:860px){.hero-grid{grid-template-columns:minmax(0,1fr)}}
+.hero h1{font-size:clamp(46px,7.4vw,92px);font-weight:900;letter-spacing:-.02em;line-height:.95}
+.hero h1 span{color:var(--sign)}
+.hero .lede{color:var(--night-muted);margin-top:18px}
+.hero .eyebrow{color:var(--night-muted);margin-bottom:16px}
+.hero-stats{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:1px;background:#24352d;border:1px solid #24352d;border-radius:var(--r);overflow:hidden;margin-top:30px}
+.hero-stats div{background:var(--night-2);padding:16px 18px}
+.hero-stats b{display:block;font-family:var(--f-display);font-size:30px;font-weight:900;color:#fff;font-variant-numeric:tabular-nums}
+.hero-stats span{font-size:13px;color:var(--night-muted)}
+.signbox{display:grid;place-items:center}
+.diamond{width:min(300px,70vw);aspect-ratio:1;max-width:100%;position:relative}
+.diamond .face{position:absolute;inset:14%;background:var(--sign);transform:rotate(45deg);border-radius:14px;box-shadow:0 0 0 6px var(--sign-ink) inset,0 0 0 9px var(--sign) inset}
+.diamond svg.deer{position:absolute;inset:27%;width:46%;height:46%}
+.diamond .bcn{position:absolute;top:-2%;width:15%;aspect-ratio:1;border-radius:50%;background:#5a3b07;border:4px solid #222}
+.diamond .bcn.l{left:20%}.diamond .bcn.r{right:20%}
+.diamond .bcn.on{background:var(--beacon);box-shadow:0 0 30px 10px rgba(255,157,28,.55)}
+.hero .cta{display:flex;gap:12px;flex-wrap:wrap;margin-top:26px}
+.btn{display:inline-flex;align-items:center;gap:8px;border:2px solid var(--sign);background:var(--sign);color:var(--sign-ink);font-family:var(--f-display);font-weight:800;font-size:15px;padding:10px 16px;border-radius:4px;text-decoration:none;cursor:pointer}
+.btn.ghost{background:transparent;color:inherit;border-color:currentColor}
+.slogan{font-family:var(--f-display);font-weight:800;font-size:20px;color:var(--sign);margin-top:6px;letter-spacing:.01em}
+
+/* 3D lab */
+#lab{background:var(--night);color:var(--night-ink)}
+#lab .eyebrow,#lab .lede{color:var(--night-muted)}
+.lab-grid{display:grid;grid-template-columns:minmax(0,1fr) 330px;gap:18px}
+@media (max-width:980px){.lab-grid{grid-template-columns:minmax(0,1fr)}}
+.stage{position:relative;border:1px solid #24352d;border-radius:var(--r);overflow:hidden;background:#060b09;min-height:420px;aspect-ratio:16/10;max-width:100%}
+@media (max-width:640px){.stage{aspect-ratio:4/5}}
+#three{position:absolute;inset:0;width:100%;height:100%;display:block;touch-action:none}
+.stage .hud{position:absolute;left:12px;top:12px;display:flex;flex-wrap:wrap;gap:6px;max-width:calc(100% - 24px)}
+.seg{display:inline-flex;flex-wrap:wrap;background:rgba(10,18,15,.82);border:1px solid #2c3f36;border-radius:5px;padding:3px;gap:2px;backdrop-filter:blur(6px)}
+.seg button{white-space:nowrap;background:transparent;border:0;color:var(--night-muted);padding:6px 10px;border-radius:3px;font-family:var(--f-display);font-weight:700;font-size:13.5px;cursor:pointer}
+.seg button.on{background:var(--sign);color:var(--sign-ink)}
+.seg button:hover:not(.on){color:#fff}
+@media (max-width:640px){.seg button{padding:5px 7px;font-size:12.5px}.stage .hint{display:none}.stage .status{max-width:calc(100% - 24px)}}
+.stage .tip{position:absolute;pointer-events:none;background:rgba(8,14,12,.92);border:1px solid var(--sign);color:#fff;padding:8px 10px;border-radius:4px;font-size:13px;max-width:240px;transform:translate(12px,12px)}
+.stage .hint{position:absolute;right:12px;bottom:10px;font-family:var(--f-mono);font-size:11px;color:var(--night-muted);background:rgba(8,14,12,.7);padding:4px 8px;border-radius:3px}
+.stage .status{position:absolute;left:12px;bottom:12px;font-family:var(--f-mono);font-size:12px;background:rgba(8,14,12,.85);border:1px solid #2c3f36;padding:6px 10px;border-radius:4px;color:var(--night-ink);max-width:calc(100% - 140px)}
+.stage .status .dot{display:inline-block;width:8px;height:8px;border-radius:50%;background:#4fbf8a;margin-right:6px}
+.stage .status.alert .dot{background:var(--beacon);box-shadow:0 0 8px var(--beacon)}
+.side{display:grid;gap:14px;align-content:start;min-width:0}
+.panel{background:var(--night-2);border:1px solid #24352d;border-radius:var(--r);padding:16px;min-width:0}
+.panel h4{color:#fff;margin-bottom:8px}
+.panel p{font-size:14px;color:var(--night-muted)}
+.part-name{font-family:var(--f-display);font-size:20px;font-weight:800;color:var(--sign);margin-bottom:4px}
+.kv{display:grid;grid-template-columns:auto 1fr;gap:4px 12px;font-size:13px;margin-top:10px}
+.kv dt{color:var(--night-muted);font-family:var(--f-mono);font-size:11.5px;text-transform:uppercase;letter-spacing:.06em;padding-top:2px}
+.kv dd{margin:0;color:var(--night-ink)}
+.partlist{display:flex;flex-wrap:wrap;gap:6px;margin-top:10px}
+.partlist button{background:#0f1915;border:1px solid #2c3f36;color:var(--night-ink);font-size:12px;padding:4px 8px;border-radius:3px;cursor:pointer}
+.partlist button.on,.partlist button:hover{border-color:var(--sign);color:var(--sign)}
+
+/* phone app */
+.phone{background:#0a100d;border:2px solid #33463d;border-radius:28px;padding:14px 14px 16px;max-width:320px;width:100%;margin-inline:auto}
+.phone .notch{width:80px;height:6px;border-radius:3px;background:#2a3a33;margin:0 auto 12px}
+.app-h{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px}
+.app-h b{font-family:var(--f-display);font-size:17px;color:#fff}
+.app-h span{font-family:var(--f-mono);font-size:11px;color:#4fbf8a}
+.tog{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:10px 0;border-top:1px solid #1f2d27;font-size:14px;color:var(--night-ink)}
+.tog small{display:block;color:var(--night-muted);font-size:12px}
+.switch{position:relative;width:46px;height:26px;flex:none}
+.switch input{position:absolute;opacity:0;inset:0;margin:0;cursor:pointer;z-index:1}
+.switch span{position:absolute;inset:0;background:#2a3a33;border-radius:13px;transition:background .2s}
+.switch span::after{content:"";position:absolute;width:20px;height:20px;left:3px;top:3px;border-radius:50%;background:#fff;transition:transform .2s}
+.switch input:checked+span{background:var(--good)}
+.switch input:checked+span::after{transform:translateX(20px)}
+.switch input:focus-visible+span{outline:3px solid var(--sign);outline-offset:2px}
+.app-log{margin-top:8px;font-family:var(--f-mono);font-size:11.5px;color:var(--night-muted);max-height:96px;overflow:auto;display:grid;gap:3px}
+.app-log div b{color:var(--sign);font-weight:600}
+input[type=range]{width:100%;accent-color:var(--sign)}
+#lab select{background:#0f1915;border:1px solid #2c3f36;border-radius:4px;padding:4px 6px;color:var(--night-ink)}
+.lab-actions{display:flex;flex-wrap:wrap;gap:8px}
+.lab-actions .btn{font-size:14px;padding:8px 12px}
+.lab-actions .btn.ghost{color:var(--night-ink);border-color:#3a5045}
+
+/* tables */
+.tbl-wrap{overflow-x:auto;border:1px solid var(--line);border-radius:var(--r);background:var(--surface)}
+section.alt .tbl-wrap{background:var(--bg)}
+table{border-collapse:collapse;width:100%;font-size:14px}
+th,td{padding:9px 12px;border-bottom:1px solid var(--line);text-align:left;vertical-align:top}
+th{font-family:var(--f-mono);font-size:11.5px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);font-weight:600;background:var(--surface-2);white-space:nowrap}
+td.r,th.r{text-align:right;font-variant-numeric:tabular-nums;white-space:nowrap}
+tr.tot td{font-weight:700;border-top:2px solid var(--ink)}
+tr:last-child td{border-bottom:0}
+td.neg{color:var(--alert)}
+
+/* charts */
+.chart-card{display:grid;gap:10px}
+.chart-box{position:relative;height:280px;max-width:100%}
+.chart-box.tall{height:340px}
+.legend{display:flex;flex-wrap:wrap;gap:14px;font-size:13px;color:var(--muted)}
+.legend i{display:inline-block;width:12px;height:12px;border-radius:2px;margin-right:6px;vertical-align:-1px}
+
+/* stat tiles */
+.stats{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:1px;background:var(--line);border:1px solid var(--line);border-radius:var(--r);overflow:hidden}
+@media (max-width:760px){.stats{grid-template-columns:repeat(2,minmax(0,1fr))}}
+.stats>div{background:var(--surface);padding:16px 18px;min-width:0}
+section.alt .stats>div{background:var(--bg)}
+.stats b{display:block;font-family:var(--f-display);font-weight:900;font-size:28px;font-variant-numeric:tabular-nums;line-height:1.1}
+.stats span{font-size:13px;color:var(--muted)}
+.delta{font-family:var(--f-mono);font-size:12px}
+.delta.up{color:var(--good)}.delta.dn{color:var(--alert)}
+
+/* segments */
+.seg-card{display:grid;gap:10px;align-content:start}
+.prio{display:inline-grid;place-items:center;width:34px;height:34px;transform:rotate(45deg);background:var(--sign);border-radius:4px;color:var(--sign-ink);font-family:var(--f-display);font-weight:900}
+.prio span{transform:rotate(-45deg)}
+.big{font-family:var(--f-display);font-weight:900;font-size:30px;line-height:1}
+
+/* process map */
+.pm-grid{display:grid;grid-template-columns:minmax(0,1fr) 320px;gap:18px}
+@media (max-width:1000px){.pm-grid{grid-template-columns:minmax(0,1fr)}}
+.pm-svg-wrap{overflow-x:auto;border:1px solid var(--line);border-radius:var(--r);background:var(--surface)}
+#pm{display:block;min-width:760px;width:100%;height:auto}
+#pm .step rect,#pm .step ellipse,#pm .step polygon{fill:var(--surface);stroke:var(--ink);stroke-width:1.5}
+#pm .step{cursor:pointer}
+#pm .step:hover rect,#pm .step.sel rect,#pm .step.sel polygon,#pm .step:hover polygon{stroke:var(--sign);stroke-width:3}
+#pm .step.bn rect{stroke:var(--alert);stroke-width:3;fill:color-mix(in srgb,var(--alert) 12%,var(--surface))}
+#pm text{fill:var(--ink);font-family:var(--f-body);font-size:12px}
+#pm .cap{font-family:var(--f-mono);font-size:11px;fill:var(--muted)}
+#pm .lbl{font-family:var(--f-mono);font-size:10.5px;font-weight:600}
+#pm .lbl.q{fill:var(--good)}#pm .lbl.b{fill:var(--alert)}#pm .lbl.cr{fill:var(--s-road)}
+#pm .edge{fill:none;stroke:var(--muted);stroke-width:1.5}
+#pm .flow{fill:none;stroke:var(--sign);stroke-width:3;stroke-dasharray:4 14;animation:flow 1.2s linear infinite;opacity:.9}
+@keyframes flow{to{stroke-dashoffset:-18}}
+#pm .inv polygon{fill:color-mix(in srgb,var(--sign) 22%,var(--surface));stroke:var(--s-road);stroke-width:1.2}
+#pm .inv text{font-size:9.5px}
+#pm .inv{cursor:pointer}
+#pm .vis{stroke:var(--s-road);stroke-dasharray:10 7;stroke-width:2}
+#pm .zone{font-family:var(--f-mono);font-size:11px;fill:var(--s-road)}
+.meter{height:14px;border-radius:7px;background:var(--surface-2);overflow:hidden;border:1px solid var(--line)}
+.meter i{display:block;height:100%;background:var(--good);transition:width .3s}
+.meter.warn i{background:var(--s-road)}.meter.over i{background:var(--alert)}
+.ctrl{display:grid;gap:6px}
+.ctrl label{font-size:13px;color:var(--muted);display:flex;justify-content:space-between;gap:8px}
+.ctrl label b{color:var(--ink);font-family:var(--f-mono);font-weight:600}
+.pill-row{display:flex;flex-wrap:wrap;gap:6px}
+.pill{border:1px solid var(--line);background:var(--surface);border-radius:20px;padding:5px 12px;font-size:13px;cursor:pointer;font-family:var(--f-display);font-weight:700}
+.pill.on{background:var(--forest);color:var(--forest-ink);border-color:var(--forest)}
+.stepbtns{display:flex;gap:6px;align-items:center}
+.stepbtns button{width:32px;height:32px;border:1px solid var(--line);background:var(--surface-2);border-radius:4px;cursor:pointer;font-weight:800}
+
+/* floor plan */
+#floor{width:100%;height:auto;display:block}
+#floor rect.z{stroke:var(--ink);stroke-width:1.2}
+#floor text{font-family:var(--f-display);font-size:12px;fill:var(--sign-ink);font-weight:700}
+#floor text.s{font-family:var(--f-mono);font-size:10px;font-weight:400}
+
+/* org chart */
+.org-wrap{overflow-x:auto;border:1px solid var(--line);border-radius:var(--r);background:var(--surface);padding:24px 16px}
+.org{min-width:1060px;display:grid;justify-items:center;gap:0}
+.ob{border:1.5px solid var(--ink);background:var(--surface);border-radius:4px;padding:7px 10px;text-align:center;font-size:12.5px;line-height:1.25;min-width:150px;cursor:pointer;position:relative}
+.ob b{display:block;font-family:var(--f-display);font-size:13.5px}
+.ob .n{font-family:var(--f-mono);font-size:11px;color:var(--muted)}
+.ob.top{background:var(--forest);color:var(--forest-ink);border-color:var(--forest)}
+.ob.top .n{color:var(--forest-ink);opacity:.8}
+.ob:hover,.ob.sel{border-color:var(--sign);box-shadow:0 0 0 2px var(--sign)}
+.vline{width:1.5px;height:18px;background:var(--ink)}
+.org-row{display:flex;gap:16px;align-items:flex-start;position:relative;padding-top:18px}
+.org-row::before{content:"";position:absolute;top:0;left:var(--l,10%);right:var(--r2,10%);height:1.5px;background:var(--ink)}
+.col{display:grid;justify-items:center;gap:0;position:relative}
+.col::before{content:"";width:1.5px;height:18px;background:var(--ink);position:absolute;top:-18px;left:50%}
+.sub{display:grid;gap:8px;margin-top:10px;padding-left:14px;border-left:1.5px solid var(--ink);justify-items:start}
+.sub .ob{min-width:150px;text-align:left}
+.sub .ob::before{content:"";position:absolute;left:-15.5px;top:50%;width:14px;height:1.5px;background:var(--ink)}
+
+/* maslow */
+.pyr{display:grid;gap:6px;justify-items:center}
+.pyr button{border:0;background:var(--forest);color:var(--forest-ink);font-family:var(--f-display);font-weight:800;padding:12px 10px;border-radius:3px;cursor:pointer;font-size:14.5px;max-width:100%}
+.pyr button.on{background:var(--sign);color:var(--sign-ink)}
+
+/* calculator */
+.calc{display:grid;grid-template-columns:340px minmax(0,1fr);gap:20px}
+@media (max-width:960px){.calc{grid-template-columns:minmax(0,1fr)}}
+.calc .inputs{display:grid;gap:16px;align-content:start}
+.calc fieldset{border:1px solid var(--line);border-radius:var(--r);padding:14px;margin:0;display:grid;gap:14px;background:var(--surface)}
+.calc legend{font-family:var(--f-display);font-weight:800;padding:0 6px}
+
+.foot{background:var(--forest);color:var(--forest-ink);padding-block:36px}
+.foot .wrap{display:flex;flex-wrap:wrap;justify-content:space-between;gap:16px;align-items:center}
+.note{font-size:13px;color:var(--muted);border-left:3px solid var(--sign);padding:6px 12px;background:var(--surface-2);border-radius:0 4px 4px 0}
+.list{margin:0;padding-left:18px;display:grid;gap:6px}
+.chips{display:flex;flex-wrap:wrap;gap:6px}
+.persp{width:100%;height:auto;display:block}
+.persp text{fill:var(--ink);font-family:var(--f-body);font-size:12px}
+.persp .ax{stroke:var(--muted);stroke-width:1.5}
+.persp .axl{font-family:var(--f-mono);font-size:10.5px;fill:var(--muted);letter-spacing:.06em}
+</style>
+</head>
+<body>
+
+<nav class="nav" aria-label="Sections">
+  <div class="wrap">
+    <a class="brand" href="#top">
+      <svg width="26" height="26" viewBox="0 0 26 26" aria-hidden="true"><rect x="4" y="4" width="18" height="18" rx="3" transform="rotate(45 13 13)" fill="#f2b705" stroke="#17160f" stroke-width="1.5"/><path d="M9 16l2-4 3-1 1-3 1 1-1 3 2 1-1 4" fill="none" stroke="#17160f" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      WildGuard
+    </a>
+    <ul>
+      <li><a class="l" href="#lab">Product lab</a></li>
+      <li><a class="l" href="#market">Market</a></li>
+      <li><a class="l" href="#mix">Marketing mix</a></li>
+      <li><a class="l" href="#forecast">Forecast</a></li>
+      <li><a class="l" href="#ops">Operations</a></li>
+      <li><a class="l" href="#quality">Quality</a></li>
+      <li><a class="l" href="#supply">Supply chain</a></li>
+      <li><a class="l" href="#people">People</a></li>
+      <li><a class="l" href="#financials">Financials</a></li>
+      <li><a class="l" href="#whatif">What-if</a></li>
+    </ul>
+  </div>
+</nav>
+
+<header class="hero" id="top">
+  <div class="wrap hero-grid">
+    <div>
+      <p class="eyebrow">Wildlife detection &amp; deterrence · Charlottesville, Virginia</p>
+      <h1>Wild<span>Guard</span></h1>
+      <p class="slogan">Smart Protection, Wild Solutions.</p>
+      <p class="lede">Solar-powered sensor nodes that detect deer with 24&nbsp;GHz radar and a backup PIR sensor, then turn them away with randomized light and sound. One platform, two products: a roadside system that lights up regulated warning signs for drivers, and a compact garden sensor homeowners control from an app.</p>
+      <div class="hero-stats">
+        <div><b>7,335</b><span>deer-related crashes on Virginia roads in 2023, with 690 injuries (VDOT)</span></div>
+        <div><b>$9.8M → $47.5M</b><span>forecast revenue, 2026 to 2030</span></div>
+        <div><b>2027</b><span>first profitable year, growing to $7.1M net income in 2030</span></div>
+        <div><b>$25,000</b><span>roadside system (16+ nodes, 2 signs) vs. ~$500,000 for comparable systems</span></div>
+      </div>
+      <div class="cta">
+        <a class="btn" href="#lab">Explore the product in 3D</a>
+        <a class="btn ghost" href="#whatif">Run the what-if model</a>
+      </div>
+    </div>
+    <div class="signbox" aria-hidden="true">
+      <div class="diamond">
+        <div class="face"></div>
+        <svg class="deer" viewBox="0 0 100 100"><path fill="#17160f" d="M70 8l3 9 6-6-2 9 7-3-6 8 5 2-9 3-3 7 4 5-2 8-8 3-26 2-8 6-3 18-5 1 1-17-5 15-5 0 4-19-4-9 4-10 12-5 26-1 5-5 3-6-3-6 2-3 3 3 1-8z"/></svg>
+        <span class="bcn l" id="bcnL"></span><span class="bcn r" id="bcnR"></span>
+      </div>
+    </div>
+  </div>
+</header>
+
+<section id="lab">
+  <div class="wrap">
+    <div class="sec-head">
+      <p class="eyebrow">Product lab · interactive 3D</p>
+      <h2 style="color:#fff">Look inside both products</h2>
+      <p class="lede">Drag to orbit, scroll or pinch to zoom, and tap any component for its role and supplier. Switch views to see the enclosure in X-ray, pulled apart, or cut open. Run a detection to watch the system respond.</p>
+    </div>
+    <div class="lab-grid">
+      <div class="stage" id="stage">
+        <canvas id="three" aria-label="3D model of the WildGuard sensor"></canvas>
+        <div class="hud">
+          <div class="seg" id="prodSeg" role="group" aria-label="Product">
+            <button data-p="road" class="on">Roadside system</button>
+            <button data-p="garden">Garden node</button>
+          </div>
+          <div class="seg" id="viewSeg" role="group" aria-label="View">
+            <button data-v="normal" class="on">Normal</button>
+            <button data-v="xray">X-ray</button>
+            <button data-v="exploded">Exploded</button>
+            <button data-v="cutaway">Cutaway</button>
+            <button data-v="overview">Overview</button>
+          </div>
+        </div>
+        <div class="tip" id="tip" hidden></div>
+        <div class="status" id="status"><span class="dot"></span><span id="statusTxt">Monitoring · radar duty-cycled, PIR always on</span></div>
+        <div class="hint">drag · zoom · tap a part</div>
+      </div>
+      <div class="side">
+        <div class="panel">
+          <div class="lab-actions">
+            <button class="btn" id="simBtn">▶ Simulate a deer</button>
+            <button class="btn ghost" id="soundBtn">Hear the deterrent</button>
+            <button class="btn ghost" id="spinBtn">Auto-rotate</button>
+          </div>
+        </div>
+        <div class="panel" id="partPanel">
+          <p class="eyebrow" style="color:var(--night-muted)">Selected component</p>
+          <div class="part-name" id="pName">Sensor node</div>
+          <p id="pDesc">Tap a part in the model or pick one below.</p>
+          <dl class="kv" id="pKV"></dl>
+          <div class="partlist" id="partList"></div>
+        </div>
+        <div class="panel" id="roadPanel">
+          <h4>Roadside system</h4>
+          <dl class="kv">
+            <dt>System</dt><dd>16 or more sensor nodes (about 40 on an average site) + 2 MUTCD warning signs with LED beacons</dd>
+            <dt>Link</dt><dd>915 MHz LoRa from each node to the sign receivers</dd>
+            <dt>Power</dt><dd>5 W solar panel + LiFePO4 cell per node, sized for a Virginia December</dd>
+            <dt>Price</dt><dd>About $25,000 per system; materials about $5,000</dd>
+            <dt>Buyers</dt><dd>VDOT districts, municipalities, HOAs</dd>
+          </dl>
+          <div class="app-log" id="roadLog" style="margin-top:12px"></div>
+        </div>
+        <div class="panel" id="gardenPanel" hidden>
+          <div class="phone" role="group" aria-label="WildGuard app mock-up">
+            <div class="notch"></div>
+            <div class="app-h"><b>Backyard node</b><span id="appBatt">● online · 87%</span></div>
+            <div class="tog"><div>Strobe light<small>Randomized LED patterns</small></div><label class="switch"><input type="checkbox" id="optLight" checked><span></span></label></div>
+            <div class="tog"><div>Sound deterrent<small>100+ randomized clips, 2–12 kHz</small></div><label class="switch"><input type="checkbox" id="optSound" checked><span></span></label></div>
+                        <div class="tog" style="display:block"><div style="display:flex;justify-content:space-between"><span>Detection range</span><span class="mono" id="rangeOut">6 m</span></div><input type="range" id="optRange" min="2" max="6" step="1" value="6" aria-label="Detection range"></div>
+            <div class="tog" style="display:block;font-size:12.5px"><span style="color:var(--night-muted)">Activity</span><div class="app-log" id="appLog"><div>No visits yet today.</div></div></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section id="market" class="alt">
+  <div class="wrap">
+    <div class="sec-head">
+      <p class="eyebrow">Exhibit 1 · Market segmentation &amp; targeting</p>
+      <h2>Three buyers, one problem</h2>
+      <p class="lede">Deer cost Virginia drivers, road crews and homeowners every year. We start where the cost is clearest and the buyer is a single decision-maker.</p>
+    </div>
+    <div class="grid g3">
+      <article class="card seg-card">
+        <div style="display:flex;gap:14px;align-items:center"><span class="prio"><span>1</span></span><h3>VDOT &amp; municipalities</h3></div>
+        <p class="big num">8.6M</p>
+        <p class="small muted">registered vehicles and 6.1M licensed drivers in Virginia (2024), growing about 1.17% a year</p>
+        <p class="small">VDOT recorded 7,335 deer-related crashes and 690 injuries in 2023 and spends heavily tracking and clearing carcasses. VDOT spends an estimated $4–5M a year cleaning up after deer collisions. Fewer crashes means fewer taxpayer dollars spent on cleanup.</p>
+        <div class="chips"><span class="tag">Product: Roadside</span><span class="tag">47 VDOT/DCR corridors + 26 Nexus Areas</span></div>
+      </article>
+      <article class="card seg-card">
+        <div style="display:flex;gap:14px;align-items:center"><span class="prio"><span>2</span></span><h3>Rural &amp; suburban HOAs</h3></div>
+        <p class="big num">9,813</p>
+        <p class="small muted">HOAs in Virginia, projected to reach 10,313 in five years (+5%)</p>
+        <p class="small">HOAs in high-deer-density areas are responsible for keeping residents safe on neighborhood roads and backroads. 60–70% are run by property management companies, so one relationship can open several contracts.</p>
+        <div class="chips"><span class="tag">Product: Roadside + Garden</span></div>
+      </article>
+      <article class="card seg-card">
+        <div style="display:flex;gap:14px;align-items:center"><span class="prio"><span>3</span></span><h3>Homeowners &amp; gardeners</h3></div>
+        <p class="big num">94.3M</p>
+        <p class="small muted">US homeowners; 2.86M more suburban homes and townhouses projected by 2027</p>
+        <p class="small">Suburban homeowners complain about deer eating gardens and shrubs, leaving droppings and carrying ticks, and many are unhappy with the deterrents they already own.</p>
+        <div class="chips"><span class="tag">Product: Garden</span></div>
+      </article>
+    </div>
+
+    <div class="grid g2" style="margin-top:28px">
+      <div class="card chart-card">
+        <h3>Virginia vehicles on the road</h3>
+        <p class="small muted">Registered vehicles, millions. 2026–2027 are projections.</p>
+        <div class="chart-box"><canvas id="chVeh" aria-label="Registered vehicles in Virginia 2020 to 2027"></canvas></div>
+      </div>
+      <div class="card">
+        <h3>How we sized the market</h3>
+        <ol class="list small" style="margin-top:12px">
+          <li><b>Garden:</b> 3,779,544 Virginia households (Census, July 2025) × 69.6% owner-occupied × 55% who garden × 73% outside dense cities = <b class="num">1,056,171</b> potential buyers in Year 1.</li>
+          <li><b>Roadside:</b> 9,801 HOAs × 60% in high-deer-density counties × 40% near wooded edges, plus 73 DCR-designated collision zones = <b class="num">2,548</b> potential sites.</li>
+          <li><b>Growth:</b> 7.5% a year for garden (electronic animal-repellent CAGR, DataHorizon Research); 1.5% for roadside (national HOA growth).</li>
+          <li><b>Share:</b> garden rises 5% → 25% by Year 5, toward the 25.4% share eco-friendly products hold (NYU Stern). Roadside holds a conservative 5%, since HOA vendors turn over often, budgets are set once a year, and an installed site does not buy again. We also expect to partner with VDOT and DWR on designated wildlife corridors.</li>
+        </ol>
+        <p class="note" style="margin-top:14px">Seasonality matters: about 1 in 5 deer accidents happen between October and December, which is also when HOAs review budgets.</p>
+      </div>
+    </div>
+
+    <div class="sec-head" style="margin-top:56px">
+      <p class="eyebrow">Exhibit 3 · Perceptual maps &amp; positioning</p>
+      <h3 style="font-size:28px">Where we sit against competitors</h3>
+    </div>
+    <div class="grid g2">
+      <div class="card">
+        <h3>Garden sensor</h3>
+        <svg class="persp" id="perspG" viewBox="0 0 440 340" role="img" aria-label="Garden sensor perceptual map"></svg>
+        <p class="small" style="margin-top:8px"><b>Positioning:</b> we measure effectiveness over six months and longer. Competing products draw complaints about breaking or failing within weeks. WildGuard layers radar and PIR detection with 100+ sound and light patterns so deer do not get used to it, all cruelty-free.</p>
+      </div>
+      <div class="card">
+        <h3>Roadside sensor</h3>
+        <svg class="persp" id="perspR" viewBox="0 0 440 340" role="img" aria-label="Roadside sensor perceptual map"></svg>
+        <p class="small" style="margin-top:8px"><b>Positioning:</b> effective roadside detection systems typically sell for around $500,000. WildGuard's system of 16 or more sensors and 2 signs sells for about $25,000, which puts collision prevention within reach of HOAs and smaller municipalities.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section id="mix">
+  <div class="wrap">
+    <div class="sec-head">
+      <p class="eyebrow">Exhibit 4 · Marketing mix</p>
+      <h2>Product, price, place, promotion</h2>
+      <p class="lede">Family branding under one name, so both products build the same reputation for reliable, humane protection. The detection-and-deterrence market is in the growth stage of its life cycle.</p>
+    </div>
+    <div class="grid g4">
+      <div class="card"><h4>Product</h4><p class="small" style="margin-top:8px">Two products, one shared board and bill of materials. The deer logo and the slogan “Smart Protection, Wild Solutions” leave room to add more wildlife products later.</p></div>
+      <div class="card"><h4>Price</h4><p class="small" style="margin-top:8px">Garden: competitive and value-based, <b class="num">$125</b> held flat for all five years, on about $46 of parts. Roadside: about <b class="num">$25,000</b> per system. An average site needs about 40 nodes, roughly $5,000 of materials, plus substantial installation labor.</p></div>
+      <div class="card"><h4>Place</h4><p class="small" style="margin-top:8px">Selective multichannel. Garden sells on our website, Amazon, Home Depot and Lowe's, shipped daily by UPS Ground. Roadside sells direct B2B to HOAs, municipalities and transportation departments. Support runs online, with on-site help for large accounts.</p></div>
+      <div class="card"><h4>Promotion</h4><p class="small" style="margin-top:8px">One message: proactive, humane protection that works. Spend runs steadily and peaks in spring and fall, when deer activity is highest. Free pilot installs let HOAs and VDOT districts see it work first. In 2029 a $1.0M contest installs roadside systems in 40 communities at no charge.</p></div>
+    </div>
+    <div class="grid g2" style="margin-top:20px">
+      <div class="card chart-card">
+        <h3>Promotion budget by year</h3>
+        <p class="small muted">Integrated marketing communications, $ thousands. 2029 jumps to $3.0M to fund the $1.0M community pilot.</p>
+        <div class="legend" id="lgImc"></div>
+        <div class="chart-box"><canvas id="chImc" aria-label="Promotion budget by year"></canvas></div>
+      </div>
+      <div class="card chart-card">
+        <h3>Sales force</h3>
+        <p class="small muted">Salespeople by year. $30k base plus 4% commission on individual sales, managed against monthly and quarterly goals for revenue, conversion, new accounts and retention.</p>
+        <div class="chart-box"><canvas id="chSales" aria-label="Number of salespeople by year"></canvas></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section id="forecast" class="alt">
+  <div class="wrap">
+    <div class="sec-head">
+      <p class="eyebrow">Exhibit 2 · Market quantification &amp; forecast</p>
+      <h2>Unit and revenue forecast</h2>
+      <p class="lede">Units = market potential × market share. The garden sensor drives volume at $125 each; the roadside system adds about $3.2–3.4M a year of steady, high-ticket B2B revenue.</p>
+    </div>
+    <div class="stats" style="margin-bottom:20px">
+      <div><b>52,936</b><span>units in Year 1</span></div>
+      <div><b>352,756</b><span>units in Year 5</span></div>
+      <div><b>$137.0M</b><span>5-year cumulative revenue</span></div>
+      <div><b>48.4%</b><span>revenue CAGR, 2026 to 2030</span></div>
+    </div>
+    <div class="grid g2">
+      <div class="card chart-card">
+        <h3>Revenue by product</h3>
+        <div class="legend"><span><i style="background:var(--s-garden)"></i>Garden sensor</span><span><i style="background:var(--s-road)"></i>Roadside system</span></div>
+        <div class="chart-box tall"><canvas id="chRev" aria-label="Revenue by product, Year 1 to 5"></canvas></div>
+      </div>
+      <div class="card" style="padding:0;overflow:hidden">
+        <div class="tbl-wrap" style="border:0;border-radius:0">
+          <table>
+            <thead><tr><th>Year</th><th>Product</th><th class="r">Market</th><th class="r">Share</th><th class="r">Units</th><th class="r">Price</th><th class="r">Revenue</th></tr></thead>
+            <tbody id="fcTbl"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section id="ops">
+  <div class="wrap">
+    <div class="sec-head">
+      <p class="eyebrow">Exhibit 7 &amp; 10 · Process map &amp; capacity</p>
+      <h2>From board to boxed kit</h2>
+      <p class="lede">Garden sensors and roadside nodes share the same assembly lines. Click any step to see what it measures and what feeds it, then add stations or whole lines and watch the bottleneck move.</p>
+    </div>
+    <div class="pm-grid">
+      <div class="pm-svg-wrap"><svg id="pm" viewBox="0 0 1100 630" role="img" aria-label="Interactive process map"></svg></div>
+      <div class="side" style="gap:14px">
+        <div class="card" id="pmDetail">
+          <p class="eyebrow">Selected step</p>
+          <h3 id="pmName" style="margin-top:4px">Wire harness</h3>
+          <div class="chips" id="pmTags" style="margin-top:8px"></div>
+          <p class="small" id="pmDesc" style="margin-top:10px"></p>
+          <div id="pmRes" style="margin-top:12px"></div>
+        </div>
+        <div class="card">
+          <h4>Capacity check</h4>
+          <div class="pill-row" id="yrPills" style="margin-top:10px"></div>
+          <div class="ctrl" style="margin-top:14px">
+            <label for="shifts">Assembly lines <b id="shiftsOut">1</b></label>
+            <input type="range" id="shifts" min="1" max="5" step="1" value="1">
+          </div>
+          <dl class="kv" style="margin-top:14px;color:var(--ink)" id="capKV"></dl>
+          <div class="meter" id="capMeter" style="margin-top:10px"><i></i></div>
+          <p class="small muted" id="capNote" style="margin-top:8px"></p>
+          <button class="pill" id="pmReset" style="margin-top:10px">Reset to plan</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="grid g2" style="margin-top:28px">
+      <div class="card">
+        <h3>Capacity plan, Years 1–5</h3>
+        <p class="small muted" style="margin-top:6px">One shift, 8 hours a day, 250 days a year. Garden demand per hour = forecast units ÷ 2,000 hours. Roadside nodes (about 40 per system) run on the same lines, so their load is subtracted from capacity.</p>
+        <div class="tbl-wrap" style="margin-top:12px">
+          <table><thead><tr><th>Year</th><th class="r">Garden demand/hr</th><th class="r">Lines</th><th class="r">Garden capacity/hr</th><th class="r">Utilization</th><th>Adjustment</th></tr></thead><tbody id="capTbl"></tbody></table>
+        </div>
+      </div>
+      <div class="card">
+        <h3>Main facility</h3>
+        <p class="small muted" style="margin-top:6px">17,095 sq ft: a 12,800 sq ft production and warehouse floor next to a 4,295 sq ft front office for management, customer service and R&amp;D. A U-shaped flow keeps receiving and shipping on the same wall.</p>
+        <svg id="floor" viewBox="0 0 520 330" role="img" aria-label="Facility floor plan" style="margin-top:12px"></svg>
+      </div>
+    </div>
+    <div class="grid g3" style="margin-top:20px">
+      <div class="card"><span class="tag cr">CR1 · Bottleneck</span><h3 style="margin-top:10px">Node assembly technicians</h3><p class="small" style="margin-top:6px">17 technicians in Year 1 work across harness and enclosure assembly, growing to 48 by Year 5 as lines are added. $67,117 a year each, fully loaded.</p></div>
+      <div class="card"><span class="tag cr">CR2</span><h3 style="margin-top:10px">Automated test stations</h3><p class="small" style="margin-top:6px">4 stations with a reference radar target, microphone check, pressure-decay seal test and firmware programmer. $18,000 each.</p></div>
+      <div class="card"><span class="tag cr">CR3</span><h3 style="margin-top:10px">Repair bench technician</h3><p class="small" style="margin-top:6px">1 technician diagnoses and reworks any unit that fails automated test. $62,000 a year.</p></div>
+    </div>
+  </div>
+</section>
+
+<section id="quality" class="alt">
+  <div class="wrap">
+    <div class="sec-head">
+      <p class="eyebrow">Exhibit 8 · Quality assurance</p>
+      <h2>A warning that doesn't fire is worse than none</h2>
+      <p class="lede">We run Total Quality Management: test records, complaints, false alerts, missed detections and repair history feed back into equipment choices, calibration guidelines and the technician checklist. Operations compete on quality and consistency, responsiveness, and speed: every unit is tested and calibrated before handoff, and every complaint gets a response within one business day.</p>
+    </div>
+    <div class="grid g4">
+      <div class="card"><h4>Reliability</h4><p class="small" style="margin-top:8px">Detection, light activation and power are tested before installation and again on site, and the results are recorded.</p></div>
+      <div class="card"><h4>Performance</h4><p class="small" style="margin-top:8px">Each sensor is positioned and calibrated for its road and terrain, with test passes before the customer accepts it.</p></div>
+      <div class="card"><h4>Durability</h4><p class="small" style="margin-top:8px">Components are inspected, connections sealed and weatherproofed, and every installation documented.</p></div>
+      <div class="card"><h4>Serviceability</h4><p class="small" style="margin-top:8px">System status is monitored, faults are logged, and repairs are retested on a set schedule.</p></div>
+    </div>
+    <div class="tbl-wrap" style="margin-top:20px">
+      <table>
+        <thead><tr><th>Quality step</th><th>What is measured</th><th>How often</th><th>How we ensure quality</th></tr></thead>
+        <tbody>
+          <tr><td><span class="tag q">Q1</span> Production release &amp; procurement</td><td>Conformance at receipt: range checks, cell capacity, solderability, solar panel voltage</td><td>Every received lot; power-up check on assembled boards</td><td>ANSI/ASQ Z1.4 Level II sampling, a certificate of conformance from every supplier, scorecards reviewed quarterly</td></tr>
+          <tr><td><span class="tag q">Q2</span> Automated test, flashing &amp; calibration</td><td>Firmware boot, radar detection, full sound library, solar charge current, battery voltage, enclosure seal</td><td>100% of units</td><td>Fixture logs pass/fail to each serial number; no node advances without a passing record</td></tr>
+          <tr><td><span class="tag q">Q3</span> Final pack &amp; out QC</td><td>Firmware version, battery charge, correct contents and labels, drop test</td><td>100% of units; drop test per pallet</td><td>Packing checklist tied to the serial record, so no unit ships without a complete, verified kit</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="grid g2" style="margin-top:20px">
+      <div class="card"><h4>Proactive</h4><p class="small" style="margin-top:8px">An installation checklist and a record for every site: equipment, settings, test results and maintenance history. Technicians train on the checklist and review recurring faults so later installs improve.</p></div>
+      <div class="card"><h4>Recovery plan</h4><p class="small" style="margin-top:8px">A missed detection, false alert or failure is logged and acknowledged within one business day. A technician inspects, repairs or replaces parts under the customer agreement, recalibrates, and repeats the on-site tests. The customer hears what happened, what was fixed and when it passed. Repeat issues trigger a review of the equipment or procedure.</p></div>
+    </div>
+  </div>
+</section>
+
+<section id="supply">
+  <div class="wrap">
+    <div class="sec-head">
+      <p class="eyebrow">Exhibit 9A · Suppliers, inventory &amp; distribution</p>
+      <h2>Thirteen inputs, two carriers</h2>
+      <p class="lede">Long-lead electronics from Shenzhen run on a fixed 90-day order interval. Fast domestic parts from Digi-Key and McMaster-Carr use two-bin replenishment, so the line never waits on a fuse.</p>
+    </div>
+    <div class="grid g2">
+      <div class="card chart-card">
+        <h3>Supplier lead time</h3>
+        <p class="small muted">Days from order to receipt, longest first.</p>
+        <div class="legend"><span><i style="background:var(--s-road)"></i>China</span><span><i style="background:var(--s-garden)"></i>United States</span></div>
+        <div class="chart-box tall" style="height:380px"><canvas id="chLead" aria-label="Supplier lead time in days"></canvas></div>
+      </div>
+      <div class="card" style="padding:0;overflow:hidden">
+        <div class="tbl-wrap" style="border:0;border-radius:0;max-height:470px;overflow:auto">
+          <table><thead><tr><th>Item</th><th>Supplier</th><th>System</th><th class="r">Every</th></tr></thead><tbody id="supTbl"></tbody></table>
+        </div>
+      </div>
+    </div>
+    <div class="grid g3" style="margin-top:20px">
+      <div class="card chart-card" style="grid-column:span 2">
+        <h3>Finished goods on hand</h3>
+        <p class="small muted">Average units held at year end, with safety stock. Batteries are stored at 50% charge, topped up every 6 months, and rotated first-in, first-out.</p>
+        <div class="legend"><span><i style="background:var(--s-garden)"></i>Average inventory</span><span><i style="background:var(--s-ni)"></i>Safety stock</span></div>
+        <div class="chart-box"><canvas id="chFG" aria-label="Finished goods inventory by year"></canvas></div>
+      </div>
+      <div class="card">
+        <h3>Distribution</h3>
+        <div style="display:grid;gap:14px;margin-top:12px">
+          <div><span class="tag">Weekly / per order</span><p style="margin-top:6px"><b>Old Dominion Freight Line</b></p><p class="small muted">Strong Virginia network for palletized roadside kits going to municipal and VDOT sites.</p></div>
+          <div><span class="tag">Daily pickup</span><p style="margin-top:6px"><b>UPS Ground</b></p><p class="small muted">Parcel delivery for garden nodes sold online and to HOAs.</p></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section id="people" class="alt">
+  <div class="wrap">
+    <div class="sec-head">
+      <p class="eyebrow">Exhibit 1 &amp; 2 · Organization &amp; people</p>
+      <h2>81 people at the end of Year 2</h2>
+      <p class="lede">A functional structure under one General Manager, growing from 69 full-time employees in Year 1. Operations is the largest branch. Click a box to see headcount and fully loaded cost (salary, bonus, payroll taxes and benefits).</p>
+    </div>
+    <div class="org-wrap"><div class="org" id="org"></div></div>
+    <p class="small muted" id="orgOut" style="margin-top:10px">Selected: General Manager · 1 person · $303,140 loaded cost in Year 2.</p>
+
+    <div class="grid g2" style="margin-top:28px">
+      <div class="card chart-card">
+        <h3>Production staffing plan</h3>
+        <p class="small muted">Direct-labor headcount by year as assembly lines are added (1, 2, 2, 3, 4 lines). Assembly grows from 17 to 48.</p>
+        <div class="legend" id="lgHead"></div>
+        <div class="chart-box"><canvas id="chHead" aria-label="Production staffing by year"></canvas></div>
+      </div>
+      <div class="card">
+        <h3>Motivation built on Maslow</h3>
+        <div class="pyr" id="pyr" style="margin-top:14px"></div>
+        <p class="small" id="pyrOut" style="margin-top:14px;min-height:5.5em"></p>
+      </div>
+    </div>
+    <div class="grid g4" style="margin-top:20px">
+      <div class="card"><h4>Hiring</h4><p class="small" style="margin-top:8px">Assembly workers must be physically fit and willing to learn. Every other role requires a college degree or prior experience.</p></div>
+      <div class="card"><h4>Raises</h4><p class="small" style="margin-top:8px">5% a year, rising to 10% in Years 4 and 5 for direct laborers and admin, so experienced technicians stay.</p></div>
+      <div class="card"><h4>Time off &amp; health</h4><p class="small" style="margin-top:8px">34 paid days off a year. 75% employer-paid medical, plus dental, vision and life insurance for every employee.</p></div>
+      <div class="card"><h4>Retirement &amp; bonuses</h4><p class="small" style="margin-top:8px">4% 401(k) match. Bonuses: General Manager 25%, GM's direct reports 12%, their reports 8%, everyone else 5%. Benefits run about $10,375 a year on a $60,000 salary.</p></div>
+    </div>
+  </div>
+</section>
+
+<section id="financials">
+  <div class="wrap">
+    <div class="sec-head">
+      <p class="eyebrow">Pro forma financial statements · 2026–2030</p>
+      <h2>Profitable from 2027</h2>
+      <p class="lede">Year 1 absorbs launch costs for a $2.06M loss. Profit begins in 2027 while cash stays tight; from 2028 WildGuard buys its own facility and expands into Texas, mostly self-funded, and still reaches a 21% operating margin in 2030, against an industry median of 13.1%.</p>
+    </div>
+    <div class="stats" style="margin-bottom:20px">
+      <div><b>$143.3M</b><span>projected value: 3.02× price-to-sales on 2030 revenue</span></div>
+      <div><b>$7.1M</b><span>net income, 2030</span></div>
+      <div><b>21%</b><span>operating margin, 2030 (industry 13.1%)</span></div>
+      <div><b>$85,949</b><span>lowest year-end cash, 2026</span></div>
+    </div>
+    <div class="grid g2">
+      <div class="card chart-card">
+        <h3>Revenue, gross profit and net income</h3>
+        <div class="legend"><span><i style="background:var(--s-garden)"></i>Revenue</span><span><i style="background:var(--s-road)"></i>Gross profit</span><span><i style="background:var(--s-ni)"></i>Net income</span></div>
+        <div class="chart-box tall"><canvas id="chIS" aria-label="Revenue, gross profit and net income"></canvas></div>
+      </div>
+      <div class="card chart-card">
+        <h3>Ending cash balance</h3>
+        <p class="small muted">$ millions. Cash dips to $86k after the Year 1 loss, recovers in 2028, then funds the $4.0M Texas expansion in 2029 before rebuilding to $2.9M.</p>
+        <div class="chart-box tall"><canvas id="chCash" aria-label="Ending cash balance by year"></canvas></div>
+      </div>
+    </div>
+    <div class="grid g2" style="margin-top:20px">
+      <div class="card">
+        <h3>Start-up capital: $4.33M</h3>
+        <p class="small muted" style="margin-top:6px">Funding sought: $3.53M in debt and convertible financing, plus $800k from the owners.</p>
+        <div class="tbl-wrap" style="margin-top:12px">
+          <table>
+            <thead><tr><th>Source</th><th class="r">Amount</th><th>Terms</th></tr></thead>
+            <tbody>
+              <tr><td>SBA 7(a) loan</td><td class="r">$3,000,000</td><td>9%, 10 years (84.9% of debt)</td></tr>
+              <tr><td>Equipment bank loan</td><td class="r">$350,000</td><td>7%, 7 years (9.9%)</td></tr>
+              <tr><td>Convertible notes</td><td class="r">$180,000</td><td>Angel investor, 6.5% (5.1%); converts in 2030</td></tr>
+              <tr><td>Member contributions</td><td class="r">$800,000</td><td>Owners' personal funds</td></tr>
+              <tr class="tot"><td>Total</td><td class="r">$4,330,000</td><td></td></tr>
+            </tbody>
+          </table>
+        </div>
+        <p class="small muted" style="margin-top:10px">Uses: $350k of manufacturing machinery, RF test fixtures and line equipment; $30k of patents and trademarks; $850k of starting inventory; and operating working capital to carry the company through Years 1 and 2.</p>
+      </div>
+      <div class="card">
+        <h3>Growth investments</h3>
+        <div class="tbl-wrap" style="margin-top:12px">
+          <table>
+            <thead><tr><th>Year</th><th>Investment</th><th class="r">Amount</th></tr></thead>
+            <tbody>
+              <tr><td>2027</td><td>Second assembly line</td><td class="r">$700,000</td></tr>
+              <tr><td>2028</td><td>Facility and land purchase, financed by a 20-year property loan at 7%</td><td class="r">$4,000,000</td></tr>
+              <tr><td>2029</td><td>Self-funded facility near Austin, Texas, to take the roadside line national; third line</td><td class="r">$4,700,000</td></tr>
+              <tr><td>2030</td><td>Fourth line plus $2.8M of equipment for the Texas warehouse</td><td class="r">$3,500,000</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <p class="small muted" style="margin-top:10px">The income statement also carries a $2.0M expansion fund in 2029 and 2030 and $1.25M of R&amp;D in 2029. Owning the building ends rent after 2028.</p>
+      </div>
+    </div>
+    <h3 style="margin-top:36px;margin-bottom:12px">Key ratios</h3>
+    <div class="tbl-wrap"><table><thead><tr><th>Ratio</th><th class="r">2026</th><th class="r">2027</th><th class="r">2028</th><th class="r">2029</th><th class="r">2030</th><th class="r">Industry</th></tr></thead><tbody id="ratTbl"></tbody></table></div>
+    <h3 style="margin-top:28px;margin-bottom:12px">Pro forma income statement</h3>
+    <div class="tbl-wrap"><table><thead><tr><th>$</th><th class="r">2026</th><th class="r">2027</th><th class="r">2028</th><th class="r">2029</th><th class="r">2030</th></tr></thead><tbody id="isTbl"></tbody></table></div>
+    <h3 style="margin-top:28px;margin-bottom:12px">Balance sheet summary</h3>
+    <div class="tbl-wrap"><table><thead><tr><th>$</th><th class="r">Inception</th><th class="r">2026</th><th class="r">2027</th><th class="r">2028</th><th class="r">2029</th><th class="r">2030</th></tr></thead><tbody id="bsTbl"></tbody></table></div>
+
+    <div class="sec-head" style="margin-top:56px">
+      <p class="eyebrow">Risk analysis · Porter's five forces</p>
+      <h3 style="font-size:28px">What could go wrong, and our answer</h3>
+    </div>
+    <div class="grid g3 risks">
+      <div class="card"><h4>Competitive rivalry</h4><p class="small" style="margin-top:8px"><b>Pressure:</b> established brands such as Orbit, Hoont and CrossTek.</p><p class="small"><b>Our answer:</b> a roadside system at about $25K against roughly $500K for rival systems.</p></div>
+      <div class="card"><h4>New entrants</h4><p class="small" style="margin-top:8px"><b>Pressure:</b> sensor devices are easy to copy.</p><p class="small"><b>Our answer:</b> public contracts, MUTCD standards and a patent filing raise the barrier.</p></div>
+      <div class="card"><h4>Substitutes</h4><p class="small" style="margin-top:8px"><b>Pressure:</b> cheaper fencing, sprays and static deer signs.</p><p class="small"><b>Our answer:</b> WildGuard detects and reacts in real time, and a roadside system pays for itself after a few prevented crashes.</p></div>
+      <div class="card"><h4>Buyer power</h4><p class="small" style="margin-top:8px"><b>Pressure:</b> customers compare prices and work with tight budgets; HOAs and municipalities cut project spending when rates are high.</p><p class="small"><b>Our answer:</b> brand loyalty and ongoing software updates.</p></div>
+      <div class="card"><h4>Supplier power</h4><p class="small" style="margin-top:8px"><b>Pressure:</b> key electronics come from China and face tariff risk.</p><p class="small"><b>Our answer:</b> off-the-shelf parts with U.S. backup suppliers such as Digi-Key and Polycase.</p></div>
+      <div class="card"><h4>People &amp; IP</h4><p class="small" style="margin-top:8px"><b>Pressure:</b> losing a key specialist would slow production, and an unpatentable design would invite larger copycats.</p><p class="small"><b>Our answer:</b> yearly raises and clear promotion paths, plus a $30K patent and trademark budget in Year 1.</p></div>
+    </div>
+  </div>
+</section>
+
+<section id="whatif" class="alt">
+  <div class="wrap">
+    <div class="sec-head">
+      <p class="eyebrow">Scenario model</p>
+      <h2>What if?</h2>
+      <p class="lede">Change the assumptions behind the plan and the five-year projection updates. Fixed costs, labor and interest come straight from the pro forma statements; materials and commissions scale with volume and revenue.</p>
+    </div>
+    <div class="pill-row" id="presets" style="margin-bottom:16px"></div>
+    <div class="calc">
+      <div class="inputs">
+        <fieldset>
+          <legend>Garden sensor</legend>
+          <div class="ctrl"><label for="wGs1">Year 1 market share <b id="wGs1o"></b></label><input type="range" id="wGs1" min="1" max="15" step="0.5"></div>
+          <div class="ctrl"><label for="wGstep">Share added each year <b id="wGstepo"></b></label><input type="range" id="wGstep" min="0" max="8" step="0.5"></div>
+          <div class="ctrl"><label for="wGg">Market growth per year <b id="wGgo"></b></label><input type="range" id="wGg" min="0" max="15" step="0.5"></div>
+          <div class="ctrl"><label for="wGp">Garden sensor price <b id="wGpo"></b></label><input type="range" id="wGp" min="75" max="200" step="5"></div>
+          <div class="ctrl"><label for="wGm">Materials cost change <b id="wGmo"></b></label><input type="range" id="wGm" min="-30" max="50" step="5"></div>
+        </fieldset>
+        <fieldset>
+          <legend>Roadside package</legend>
+          <div class="ctrl"><label for="wRs">Market share <b id="wRso"></b></label><input type="range" id="wRs" min="1" max="20" step="0.5"></div>
+          <div class="ctrl"><label for="wRp">System price <b id="wRpo"></b></label><input type="range" id="wRp" min="10000" max="60000" step="1000"></div>
+        </fieldset>
+        <fieldset>
+          <legend>Spending</legend>
+          <div class="ctrl"><label for="wImc">Promotion budget <b id="wImco"></b></label><input type="range" id="wImc" min="50" max="200" step="10"></div>
+        </fieldset>
+      </div>
+      <div style="display:grid;gap:16px;min-width:0;align-content:start">
+        <div class="stats" id="wStats"></div>
+        <div class="card chart-card">
+          <h3>Net income by year</h3>
+          <div class="legend"><span><i style="background:var(--s-ni)"></i>Your scenario</span><span><i style="background:var(--muted)"></i>Business plan</span></div>
+          <div class="chart-box"><canvas id="chW" aria-label="Scenario net income versus plan"></canvas></div>
+        </div>
+        <div class="tbl-wrap"><table><thead><tr><th>Scenario</th><th class="r">2026</th><th class="r">2027</th><th class="r">2028</th><th class="r">2029</th><th class="r">2030</th></tr></thead><tbody id="wTbl"></tbody></table></div>
+        <p class="note" id="wCap"></p>
+      </div>
+    </div>
+
+    <div class="card" style="margin-top:28px">
+      <div class="grid g2" style="align-items:center">
+        <div>
+          <p class="eyebrow">For a roadside buyer</p>
+          <h3 style="margin-top:6px;font-size:26px">How fast does a package pay for itself?</h3>
+          <p class="small muted" style="margin-top:8px">The plan puts the average cost of one wildlife-vehicle collision at about $8,000 (U.S. Department of Transportation, 2025). Set the crashes at a site and the reduction you expect.</p>
+          <div class="ctrl" style="margin-top:14px"><label for="rCr">Deer crashes per year at the site <b id="rCro"></b></label><input type="range" id="rCr" min="1" max="20" step="1" value="6"></div>
+          <div class="ctrl" style="margin-top:10px"><label for="rRed">Crashes prevented <b id="rRedo"></b></label><input type="range" id="rRed" min="10" max="90" step="5" value="50"></div>
+        </div>
+        <div class="stats" style="grid-template-columns:repeat(2,minmax(0,1fr))">
+          <div><b id="rSave"></b><span>avoided crash cost per year</span></div>
+          <div><b id="rPay"></b><span>payback on a $25,000 system</span></div>
+          <div><b id="rBreak"></b><span>crashes prevented to break even</span></div>
+          <div><b id="r5"></b><span>net savings over 5 years</span></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<footer class="foot">
+  <div class="wrap">
+    <div><b style="font-family:var(--f-display);font-size:20px">WildGuard</b><p class="small" style="opacity:.8">Team 6 · Section 4 · COB300 · Fall 2026</p><p class="small" style="opacity:.8;margin-top:6px">Brooke Goldberg · Parker Graham · Jaxom Schwarz · Kai Talley · Anthony Walker · Cayden Storicks · Leonardo Becerra · Haden James</p></div>
+    <p class="small" style="opacity:.8;max-width:56ch">Figures come from the final business plan and its exhibits. Market data: VDOT, Virginia DMV, US Census, DataHorizon Research, NYU Stern, U.S. DOT, Damodaran.</p>
+  </div>
+</footer>
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/build/three.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.js"></script>
+<script>
+(function(){
+"use strict";
+const $=s=>document.querySelector(s), $$=s=>[...document.querySelectorAll(s)];
+const YRS=["2026","2027","2028","2029","2030"];
+const fmt=n=>"$"+Math.round(n).toLocaleString("en-US");
+const fmtM=n=>(n<0?"−":"")+"$"+(Math.abs(n)/1e6).toFixed(Math.abs(n)>=1e8?0:2).replace(/\.?0+$/,m=>m.length>1&&m.startsWith(".")?"":m)+"M";
+const fmtMs=n=>(n<0?"−$":"$")+(Math.abs(n)/1e6).toFixed(2)+"M";
+const css=v=>getComputedStyle(document.documentElement).getPropertyValue(v).trim();
+
+/* ---------- source data (team exhibits) ---------- */
+const GPOT=[1056170.893536];for(let i=1;i<5;i++)GPOT.push(GPOT[i-1]*1.075);
+const RPOT=[0,1,2,3,4].map(i=>2548.26*Math.pow(1.015,i));
+const FC={
+  gPot:GPOT, gShare:[.05,.10,.15,.20,.25], gPrice:[125,125,125,125,125],
+  gUnits:GPOT.map((p,i)=>p*[.05,.10,.15,.20,.25][i]),
+  rPot:RPOT, rUnits:RPOT.map(p=>p*.05)
+};
+FC.gRev=FC.gUnits.map(u=>u*125); FC.rRev=FC.rUnits.map(u=>u*25000);
+const IS={
+  rev:[9786393,17425401,26166679,36132770,47458401],
+  mat:[3326614,5864033,9079434,12747121,16916864],
+  dl:[1815300,2159640,2325503,3513094,5545275],
+  dlTax:[146130,173440,186371,280610,441638],
+  dlBen:[323402,370915,386401,551923,827556],
+  gp:[4174947,8857372,14188969,19040022,23727069],
+  ohSal:[2834800,3102540,3389966,3910876,4502067],
+  ohTax:[226300,247750,270706,311766,338383],
+  ohBen:[443919,487964,532913,596282,662860],
+  adv:[1200000,1500000,1750000,3000000,2200000],
+  rent:[256425,256425,256425,0,0],
+  rd:[100000,105300,110881,1250000,500000],
+  comm:[593137,913710,1289035,1897831,2499388],
+  ins:[48932,87127,130833,180664,237292],
+  travel:[127000,129000,131000,333000,335000],
+  other:[2430+250+15000,2430+150+15000,2430+150+15000,2430+150+15000,2430+150+15000],
+  dep:[50000,50000,150000,250000,350000],
+  pat:[30000,0,0,0,0],
+  exp:[0,0,0,2000000,2000000],
+  opex:[5928193,6897396,8029339,13747999,13642570],
+  ebit:[-1753246,1959976,6159630,5292023,10084499],
+  int:[306200,334598,586536,598290,601536],
+  ebt:[-2059446,1625378,5573094,4693733,9482963],
+  tax:[0,0,1393274,1173433,2370741],
+  ni:[-2059446,1625378,4179820,3520300,7112222],
+  cash:[85949,320187,3106931,818374,2880095]
+};
+const BS={
+  cash:[3100000,85949,320187,3106931,818374,2880095],
+  ar:[0,804361,1432225,2150686,2969817,3900691],
+  inv:[850000,1572500,2358750,3066375,4292925,6010095],
+  nfa:[380000,330000,980000,4830000,9280000,12430000],
+  ta:[4330000,2792810,5091162,13153992,17361116,25220881],
+  cl:[0,1018967,1439984,1922837,2619640,3513326],
+  ltd:[3530000,3033289,3285246,6685403,6675424,6349280],
+  tl:[3530000,4052256,4725230,8608240,9295064,9862606],
+  eq:[800000,-1259446,365932,4545752,8066052,15358275]
+};
+const pct=(a,b)=>a.map((v,i)=>v/b[i]);
+const RAT=[
+  ["Current ratio",[null,2.42,2.86,4.33,3.08],1.46,"x"],
+  ["Quick ratio",[null,.87,1.22,2.73,1.45],1.05,"x"],
+  ["Gross margin",pct(IS.gp,IS.rev),.619,"%"],
+  ["Operating margin",pct(IS.ebit,IS.rev),.131,"%"],
+  ["Net margin",pct(IS.ni,IS.rev),.078,"%"],
+  ["Return on assets",[-.48,.58,.82,.27,.41],.131,"%"],
+  ["Debt / equity",[4.41,-3.22,12.91,1.89,1.15],3.8,"x"],
+  ["Times interest earned",[-5.73,5.86,10.50,8.85,16.76],3.6,"x"],
+  ["Inventory turnover",[6.60,5.45,5.08,5.57,5.53],3.51,"x"]
+];
+const STAFF={asm:[17,18,19,29,48],test:[3,6,6,9,12],maint:[1,2,2,3,4],ship:[4,8,8,12,16]};
+const SUP=[
+  ["Battery cell, LiFePO4 32700 with low-temp cutoff","Himax Electronics","Shenzhen, China",45,90,"Fixed order interval","CN"],
+  ["Solar panel, ETFE","Shenzhen Shine Solar","Shenzhen, China",30,90,"Fixed order interval","CN"],
+  ["24 GHz mmWave radar","Shenzhen Hi-Link Electronic","Shenzhen, China",21,90,"Fixed order interval","CN"],
+  ["Low-power PIR sensor","Nanyang Senba Optical","Nanyang, China",21,90,"Fixed order interval","CN"],
+  ["Custom main board (ESP32-C3 + LoRa)","JLCPCB","Shenzhen, China",21,90,"Fixed order interval","CN"],
+  ["Audio module + microSD","DFRobot","Shanghai, China",14,90,"Fixed quantity","CN"],
+  ["Steel pole, A500, 6 ft","Warrenton Steel","Warrenton, MO",7,30,"Fixed quantity","US"],
+  ["Weatherproof enclosure, NEMA 4X","Polycase","Avon, OH",7,30,"Fixed quantity","US"],
+  ["High-power LED strobe array","SuperBrightLEDs","St. Louis, MO",3,30,"Two-bin","US"],
+  ["Class D amp, charge port, brackets","Digi-Key Electronics","Thief River Falls, MN",2,30,"Two-bin","US"],
+  ["Weatherproof horn speaker, IP66","Digi-Key Electronics","Thief River Falls, MN",2,30,"Two-bin","US"],
+  ["Wiring, fuses, cable glands","Digi-Key Electronics","Thief River Falls, MN",2,30,"Two-bin","US"],
+  ["Clamps & tamper fasteners","McMaster-Carr","Elmhurst, IL",2,30,"Two-bin","US"]
+];
+
+/* ---------- tables ---------- */
+function fillTables(){
+  let h="";
+  for(let i=0;i<5;i++){
+    h+=`<tr><td rowspan="2"><b>Y${i+1}</b><br><span class="muted small">${YRS[i]}</span></td><td>Garden</td><td class="r">${Math.round(FC.gPot[i]).toLocaleString()}</td><td class="r">${(FC.gShare[i]*100).toFixed(0)}%</td><td class="r">${Math.round(FC.gUnits[i]).toLocaleString()}</td><td class="r">$${FC.gPrice[i]}</td><td class="r">${fmtMs(FC.gRev[i])}</td></tr>`;
+    h+=`<tr><td>Roadside</td><td class="r">${Math.round(FC.rPot[i]).toLocaleString()}</td><td class="r">5%</td><td class="r">${Math.round(FC.rUnits[i]).toLocaleString()}</td><td class="r">$25,000</td><td class="r">${fmtMs(FC.rRev[i])}</td></tr>`;
+  }
+  $("#fcTbl").innerHTML=h;
+  $("#supTbl").innerHTML=SUP.map(s=>`<tr><td>${s[0]}<br><span class="muted small">${s[3]}-day lead</span></td><td>${s[1]}<br><span class="muted small">${s[2]}</span></td><td class="small">${s[5]}</td><td class="r">${s[4]} d</td></tr>`).join("");
+  const rf=(v,f)=>v===null?"n/a":f==="%"?(v*100).toFixed(1)+"%":v.toFixed(2)+"×";
+  $("#ratTbl").innerHTML=RAT.map(r=>`<tr><td>${r[0]}</td>${r[1].map(v=>`<td class="r${v!==null&&v<0?" neg":""}">${rf(v,r[3])}</td>`).join("")}<td class="r muted">${rf(r[2],r[3])}</td></tr>`).join("");
+  const isRows=[["Sales revenue",IS.rev,1],["Materials",IS.mat],["Direct labor, taxes & benefits",IS.dl.map((v,i)=>v+IS.dlTax[i]+IS.dlBen[i])],["Gross profit",IS.gp,1],["Overhead salaries, taxes & benefits",IS.ohSal.map((v,i)=>v+IS.ohTax[i]+IS.ohBen[i])],["Advertising & promotion",IS.adv],["Commissions",IS.comm],["Rent",IS.rent],["Research & development",IS.rd],["Travel, meals & lodging",IS.travel],["Expansion fund",IS.exp],["Depreciation",IS.dep],["Insurance, licenses, office, web & patents",IS.ins.map((v,i)=>v+IS.other[i]+IS.pat[i])],["Total operating expenses",IS.opex,1],["EBIT",IS.ebit,1],["Interest",IS.int],["Income tax",IS.tax],["Net income",IS.ni,2]];
+  $("#isTbl").innerHTML=isRows.map(r=>`<tr${r[2]===2?' class="tot"':""}><td>${r[2]?"<b>"+r[0]+"</b>":r[0]}</td>${r[1].map(v=>`<td class="r${v<0?" neg":""}">${r[2]?"<b>":""}${v<0?"(":""}${Math.round(Math.abs(v)).toLocaleString()}${v<0?")":""}${r[2]?"</b>":""}</td>`).join("")}</tr>`).join("");
+  const bsRows=[["Cash",BS.cash],["Accounts receivable",BS.ar],["Inventory",BS.inv],["Net fixed assets",BS.nfa],["Total assets",BS.ta,1],["Current liabilities",BS.cl],["Long-term debt",BS.ltd],["Total liabilities",BS.tl,1],["Members' equity",BS.eq,1]];
+  $("#bsTbl").innerHTML=bsRows.map(r=>`<tr><td>${r[2]?"<b>"+r[0]+"</b>":r[0]}</td>${r[1].map(v=>`<td class="r${v<0?" neg":""}">${v<0?"(":""}${Math.round(Math.abs(v)).toLocaleString()}${v<0?")":""}</td>`).join("")}</tr>`).join("");
+}
+
+/* ---------- perceptual maps ---------- */
+function persp(id,pts){
+  const W=440,H=340,L=46,R=20,T=18,B=40,pw=W-L-R,ph=H-T-B;
+  const x=v=>L+v/10*pw, y=v=>T+(10-v)/10*ph;
+  let s=`<rect x="${L}" y="${T}" width="${pw}" height="${ph}" fill="none" stroke="var(--line)"/>`;
+  s+=`<line class="ax" x1="${x(5)}" y1="${T}" x2="${x(5)}" y2="${T+ph}"/><line class="ax" x1="${L}" y1="${y(5)}" x2="${L+pw}" y2="${y(5)}"/>`;
+  s+=`<text class="axl" x="${L+pw}" y="${H-12}" text-anchor="end">MORE EFFECTIVE →</text><text class="axl" x="${L}" y="${H-12}">← LESS EFFECTIVE</text>`;
+  s+=`<text class="axl" transform="translate(16 ${T}) rotate(90)">EXPENSIVE ↑</text><text class="axl" transform="translate(16 ${T+ph}) rotate(-90)" text-anchor="start">INEXPENSIVE</text>`;
+  pts.forEach(p=>{
+    const wg=p.wg, cx=x(p.e), cy=y(p.p);
+    s+=`<g><title>${p.n}</title><circle cx="${cx}" cy="${cy}" r="${wg?11:7}" fill="${wg?"var(--sign)":"var(--muted)"}" stroke="var(--surface)" stroke-width="2"/>`;
+    if(wg)s+=`<circle cx="${cx}" cy="${cy}" r="17" fill="none" stroke="var(--sign)" stroke-width="1.5" opacity=".6"/>`;
+    const anchor=p.a||"start", dx=anchor==="end"?-16:16;
+    s+=`<text x="${cx+dx}" y="${cy+4}" text-anchor="${anchor}" font-weight="${wg?800:500}">${p.n}</text></g>`;
+  });
+  $(id).innerHTML=s;
+}
+
+/* ---------- charts ---------- */
+let charts=[];
+function base(){
+  const ink=css("--ink"),muted=css("--muted"),line=css("--line");
+  Chart.defaults.color=muted; Chart.defaults.borderColor=line;
+  Chart.defaults.font.family=css("--f-body"); Chart.defaults.font.size=12;
+  Chart.defaults.plugins.legend.display=false;
+  Chart.defaults.plugins.tooltip.backgroundColor=css("--surface");
+  Chart.defaults.plugins.tooltip.titleColor=ink; Chart.defaults.plugins.tooltip.bodyColor=ink;
+  Chart.defaults.plugins.tooltip.borderColor=line; Chart.defaults.plugins.tooltip.borderWidth=1;
+  Chart.defaults.plugins.tooltip.padding=10; Chart.defaults.maintainAspectRatio=false;
+  Chart.defaults.elements.bar.borderRadius=4; Chart.defaults.elements.line.borderWidth=2;
+  Chart.defaults.interaction={mode:"index",intersect:false};
+}
+const money=v=>"$"+(Math.abs(v)>=1e6?(v/1e6).toFixed(1)+"M":Math.abs(v)>=1e3?(v/1e3).toFixed(0)+"k":v);
+const yMoney={ticks:{callback:money},grid:{color:()=>css("--line")}};
+function mk(id,cfg){const c=new Chart(document.getElementById(id),cfg);charts.push(c);return c;}
+let wChart=null;
+function drawCharts(){
+  charts.forEach(c=>c.destroy()); charts=[]; base();
+  const G=css("--s-garden"),R=css("--s-road"),N=css("--s-ni"),S=css("--surface"),M=css("--muted");
+  mk("chVeh",{type:"line",data:{labels:["2020","2021","2022","2023","2024","2025","2026p","2027p"],datasets:[{label:"Registered vehicles (M)",data:[8.333,8.403,8.494,8.589,8.685,8.833,8.94,9.04],borderColor:G,backgroundColor:G+"22",fill:true,pointRadius:4,pointBackgroundColor:G,segment:{borderDash:c=>c.p0DataIndex>=5?[5,4]:undefined},tension:.25}]},options:{scales:{y:{min:8.2,ticks:{callback:v=>v.toFixed(1)+"M"}},x:{grid:{display:false}}},plugins:{tooltip:{callbacks:{label:c=>" "+c.parsed.y.toFixed(2)+"M vehicles"}}}}});
+  const imc=[1200,1500,1750,3000,2200], parts=[["Advertising",[456,570,666,760,836],G],["Sales promotion",[360,450,524,600,660],R],["Other promotion (2029: $1.0M pilot)",[240,300,350,1400,440],N],["PR",[144,180,210,240,264],M]];
+  $("#lgImc").innerHTML=parts.map(p=>`<span><i style="background:${p[2]}"></i>${p[0]}</span>`).join("");
+  mk("chImc",{type:"bar",data:{labels:YRS,datasets:parts.map(p=>({label:p[0],data:p[1],backgroundColor:p[2],borderColor:S,borderWidth:{top:2},maxBarThickness:46}))},options:{scales:{x:{stacked:true,grid:{display:false}},y:{stacked:true,ticks:{callback:v=>"$"+v+"k"}}},plugins:{tooltip:{callbacks:{label:c=>` ${c.dataset.label}: $${Math.round(c.parsed.y)}k`,footer:it=>"Total: $"+imc[it[0].dataIndex]+"k"}}}}});
+  mk("chSales",{type:"bar",data:{labels:YRS,datasets:[{label:"Salespeople",data:[12,16,20,25,30],backgroundColor:G,maxBarThickness:46}]},options:{scales:{x:{grid:{display:false}},y:{beginAtZero:true}},plugins:{tooltip:{callbacks:{label:c=>" "+c.parsed.y+" salespeople"}}}}});
+  mk("chRev",{type:"bar",data:{labels:YRS.map((y,i)=>"Y"+(i+1)+" · "+y),datasets:[{label:"Garden sensor",data:FC.gRev,backgroundColor:G,borderColor:S,borderWidth:{top:2},maxBarThickness:56},{label:"Roadside system",data:FC.rRev,backgroundColor:R,borderColor:S,borderWidth:{top:2},maxBarThickness:56}]},options:{scales:{x:{stacked:true,grid:{display:false}},y:{stacked:true,...yMoney}},plugins:{tooltip:{callbacks:{label:c=>` ${c.dataset.label}: ${fmtMs(c.parsed.y)}`,footer:it=>"Total: "+fmtMs(FC.gRev[it[0].dataIndex]+FC.rRev[it[0].dataIndex])}}}}});
+  mk("chLead",{type:"bar",data:{labels:SUP.map(s=>s[0].replace(/,.*$/,"").replace(" with low-temp cutoff","")),datasets:[{label:"Lead time",data:SUP.map(s=>s[3]),backgroundColor:SUP.map(s=>s[6]==="CN"?R:G),maxBarThickness:20}]},options:{indexAxis:"y",interaction:{mode:"nearest",intersect:true,axis:"y"},scales:{x:{beginAtZero:true,ticks:{callback:v=>v+" d"}},y:{grid:{display:false},ticks:{autoSkip:false,font:{size:11}}}},plugins:{tooltip:{callbacks:{title:it=>SUP[it[0].dataIndex][0],label:c=>{const s=SUP[c.dataIndex];return[` ${s[3]}-day lead time`,` ${s[1]}, ${s[2]}`,` ${s[5]}, every ${s[4]} days`];}}}}}});
+  mk("chFG",{type:"bar",data:{labels:YRS,datasets:[{label:"Average inventory",data:[1865,3379,4886,6983,8208],backgroundColor:G,maxBarThickness:34},{label:"Safety stock",data:[1695,3071,4441,6347,7460],backgroundColor:N,maxBarThickness:34}]},options:{datasets:{bar:{categoryPercentage:.6,barPercentage:.9}},scales:{x:{grid:{display:false}},y:{beginAtZero:true,ticks:{callback:v=>v.toLocaleString()}}},plugins:{tooltip:{callbacks:{label:c=>` ${c.dataset.label}: ${c.parsed.y.toLocaleString()} units`}}}}});
+  const sp=[["Assembly",STAFF.asm,G],["Test",STAFF.test,R],["Shipping",STAFF.ship,N],["Maintenance",STAFF.maint,M]];
+  $("#lgHead").innerHTML=sp.map(p=>`<span><i style="background:${p[2]}"></i>${p[0]}</span>`).join("");
+  mk("chHead",{type:"bar",data:{labels:YRS.map((y,i)=>y+" · "+[1,2,2,3,4][i]+(i?" lines":" line")),datasets:sp.map(p=>({label:p[0],data:p[1],backgroundColor:p[2],borderColor:S,borderWidth:{top:2},maxBarThickness:46}))},options:{scales:{x:{stacked:true,grid:{display:false}},y:{stacked:true,beginAtZero:true}},plugins:{tooltip:{callbacks:{label:c=>` ${c.dataset.label}: ${c.parsed.y}`,footer:it=>{const i=it[0].dataIndex;return`Total: ${STAFF.asm[i]+STAFF.test[i]+STAFF.maint[i]+STAFF.ship[i]} production staff`;}}}}}});
+  mk("chIS",{type:"bar",data:{labels:YRS,datasets:[{label:"Revenue",data:IS.rev,backgroundColor:G,maxBarThickness:30},{label:"Gross profit",data:IS.gp,backgroundColor:R,maxBarThickness:30},{label:"Net income",data:IS.ni,backgroundColor:N,maxBarThickness:30}]},options:{datasets:{bar:{categoryPercentage:.7,barPercentage:.9}},scales:{x:{grid:{display:false}},y:yMoney},plugins:{tooltip:{callbacks:{label:c=>` ${c.dataset.label}: ${fmtMs(c.parsed.y)}`}}}}});
+  mk("chCash",{type:"line",data:{labels:["Start",...YRS],datasets:[{label:"Ending cash",data:BS.cash,borderColor:N,backgroundColor:N+"26",fill:true,pointRadius:4,pointBackgroundColor:N,cubicInterpolationMode:"monotone"}]},options:{scales:{x:{grid:{display:false}},y:{...yMoney,beginAtZero:true}},plugins:{tooltip:{callbacks:{label:c=>" "+fmtMs(c.parsed.y)}}}}});
+  wChart=mk("chW",{type:"bar",data:{labels:YRS,datasets:[{label:"Your scenario",data:IS.ni,backgroundColor:N,maxBarThickness:30},{label:"Business plan",data:IS.ni,backgroundColor:M+"88",maxBarThickness:30}]},options:{datasets:{bar:{categoryPercentage:.6,barPercentage:.9}},scales:{x:{grid:{display:false}},y:yMoney},plugins:{tooltip:{callbacks:{label:c=>` ${c.dataset.label}: ${fmtMs(c.parsed.y)}`}}}}});
+  runCalc();
+}
+
+/* ---------- process map ---------- */
+const STEPS={
+  order:{n:"Order capture",t:"Online and retail orders come in. Customers see this step and the delivery; everything else happens behind the line of visibility.",cap:80,u:"orders/hr",res:1,shape:"rect",x:40,y:22,w:160,h:52,tags:[]},
+  start:{n:"Start: production plan",t:"The production plan is released from the sales forecast.",shape:"oval",x:40,y:150,w:160,h:60,tags:[]},
+  q1:{n:"Procurement & power-up check",t:"Every received lot is checked for conformance: range checks, cell capacity, solderability and solar panel voltage, with a power-up check on assembled boards. ANSI/ASQ Z1.4 Level II sampling and supplier scorecards reviewed quarterly.",cap:80,u:"units/hr",res:1,rn:"inspection cell",x:250,y:150,w:180,h:62,tags:["Q1"]},
+  pcb:{n:"Mount PCBs in enclosures",t:"Technicians mount the custom ESP32-C3 + LoRa main board inside the NEMA 4X polycarbonate enclosure.",cap:70,u:"units/hr",res:1,rn:"mounting cell",x:500,y:150,w:180,h:62,tags:[]},
+  harness:{n:"Snap in wire harness",t:"Node assembly technicians (17 in Year 1) connect the radar, PIR, speaker, solar panel and battery to the board through the wiring harness. This station sets each line's throughput at 50 good units an hour.",cap:50,u:"units/hr",res:1,rn:"line crew",x:750,y:150,w:190,h:62,tags:["B1","CR1"]},
+  battery:{n:"Install battery cells",t:"The 32700 LiFePO4 cell and its low-temperature cutoff go in. Lithium is permanently damaged if charged below 0 °C, so the cutoff is required.",cap:75,u:"units/hr",res:1,rn:"battery cell",x:750,y:290,w:190,h:62,tags:[]},
+  gasket:{n:"Gasket & waterproof seal",t:"A silicone gasket is applied and the enclosure is sealed against weather.",cap:65,u:"units/hr",res:1,rn:"sealing cell",x:520,y:290,w:180,h:62,tags:[]},
+  test:{n:"Automated test, flash & calibrate",t:"Every unit: firmware boot, radar detection against a reference target, full sound library, solar charge current, battery voltage and enclosure seal. The fixture logs pass/fail to the serial number, and no node moves on without a passing record.",cap:60,u:"units/hr",res:4,rn:"test station",x:290,y:290,w:190,h:62,tags:["Q2","CR2"]},
+  fail:{n:"Fails tests?",t:"Units that fail go to the repair bench and come back through test.",shape:"dia",x:320,y:402,w:130,h:76,tags:[]},
+  repair:{n:"Technical repair bench",t:"One technician diagnoses and reworks failed units. At 8 units an hour the bench covers a failure rate up to about 13% of a 60-unit hour.",cap:8,u:"units/hr",res:1,rn:"technician",x:40,y:412,w:170,h:56,tags:["CR3"],offline:true},
+  type:{n:"Type of node?",t:"The line splits: garden nodes go to retail pack-out, roadside nodes go to pole and sign assembly.",shape:"dia",x:545,y:402,w:130,h:76,tags:[]},
+  road:{n:"Mount nodes on poles, add signs",t:"Roadside nodes are mounted on 6-ft A500 steel poles with band clamps and tamper fasteners, and kitted with two outsourced MUTCD warning signs.",cap:64,u:"units/hr",res:1,rn:"pole cell",x:410,y:530,w:190,h:60,tags:[],offline:true},
+  garden:{n:"Add brackets & charging port",t:"Garden nodes get mounting brackets and the IP68 external charging port.",cap:70,u:"units/hr",res:1,rn:"pack cell",x:660,y:530,w:190,h:60,tags:[]},
+  pack:{n:"Package & serialize",t:"Firmware version, battery charge, contents and labels are verified for every unit, with a drop test per pallet. The packing checklist is tied to the serial record.",cap:60,u:"units/hr",res:1,rn:"packing cell",x:890,y:430,w:180,h:62,tags:["Q3"]},
+  end:{n:"Ship to customer / retail",t:"Garden kits leave daily by UPS Ground. Palletized roadside kits go weekly or per order by Old Dominion Freight Line.",shape:"oval",x:890,y:20,w:180,h:56,tags:[]}
+};
+const INV=[
+  ["PCBs (ESP32-C3 + LoRa)","pcb",540,214,"JLCPCB, Shenzhen · 21-day lead"],
+  ["Enclosure","pcb",640,214,"Polycase, Avon OH · 7-day lead"],
+  ["Radar + PIR","harness",990,128,"Hi-Link / Senba, China · 21 days"],
+  ["Audio, amp, speaker","harness",1062,128,"DFRobot / Digi-Key · 2–14 days"],
+  ["Solar panel","harness",990,206,"Shine Solar, Shenzhen · 30 days"],
+  ["Wiring, fuses, glands","harness",1062,206,"Digi-Key · 2 days, two-bin"],
+  ["LiFePO4 cells","battery",1000,300,"Himax, Shenzhen · 45 days"],
+  ["Warning signs","road",150,560,"Outsourced MUTCD sign assembly"],
+  ["Clamps & fasteners","road",232,560,"McMaster-Carr · 2 days"],
+  ["Steel poles","road",314,560,"Warrenton Steel, MO · 7 days"],
+  ["Charge port & brackets","garden",950,560,"Digi-Key · 2 days"]
+];
+const MAIN=["q1","pcb","harness","battery","gasket","test","garden","pack"];
+const PLAN=[
+  {sh:1,res:{},note:"1 line; allocate roadside work."},
+  {sh:2,res:{},note:"Add 1 full line at start of year."},
+  {sh:2,res:{},note:"Keep 2 lines; monitor yield."},
+  {sh:3,res:{},note:"Add 1 full line at start of year."},
+  {sh:4,res:{},note:"Add 1 full line at start of year."}
+];
+// Exhibit 10: garden demand per hour plus roadside load (40 nodes per system), 2,000 hours a year
+const GDEM=FC.gUnits.map(g=>g/2000), RLOAD=FC.rUnits.map(r=>r*40/2000), DEM=GDEM.map((g,i)=>g+RLOAD[i]);
+let pmState={yr:0,sh:1,res:{},sel:"harness"};
+const rate=k=>{const s=STEPS[k];const n=pmState.res[k]??s.res;return s.cap/s.res*n;};
+const resN=k=>pmState.res[k]??STEPS[k].res;
+function applyPlan(i){pmState.yr=i;pmState.sh=PLAN[i].sh;pmState.res={...PLAN[i].res};$("#shifts").value=pmState.sh;}
+function center(s){return[s.x+s.w/2,s.y+s.h/2];}
+function pmDraw(){
+  const S=STEPS, bn=MAIN.reduce((a,k)=>rate(k)<rate(a)?k:a,MAIN[0]);
+  const P=(a,b)=>a.map(p=>p.join(",")).join(" ");
+  const E=[ // polylines
+    [[120,74],[120,150]],[[200,180],[250,180]],[[430,181],[500,181]],[[680,181],[750,181]],[[845,212],[845,290]],
+    [[750,321],[700,321]],[[520,321],[480,321]],[[385,352],[385,402]],[[320,440],[210,440]],[[125,412],[125,330],[290,330]],
+    [[450,440],[545,440]],[[610,478],[505,478],[505,530]],[[675,440],[755,440],[755,530]],[[850,560],[980,560],[980,492]],
+    [[505,590],[505,608],[1040,608],[1040,492]],[[980,430],[980,76]]
+  ];
+  const FLOW=[0,1,2,3,4,5,6,7,10,12,13,15];
+  let s=`<line class="vis" x1="0" y1="100" x2="1100" y2="100"/><text class="zone" x="8" y="94">CUSTOMER FACING</text><text class="zone" x="8" y="116">BACK OF HOUSE</text><text class="zone" x="550" y="94" text-anchor="middle">LINE OF VISIBILITY</text>`;
+  s+=`<defs><marker id="ah" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0L10 5L0 10z" fill="var(--muted)"/></marker></defs>`;
+  E.forEach((e,i)=>{s+=`<polyline class="edge" points="${P(e)}" marker-end="url(#ah)"/>`;});
+  FLOW.forEach(i=>{s+=`<polyline class="flow" points="${P(E[i])}"/>`;});
+  s+=`<text x="262" y="432" class="cap">yes</text><text x="462" y="432" class="cap">no</text><text x="520" y="472" class="cap">roadside</text><text x="690" y="432" class="cap">garden</text>`;
+  INV.forEach((v,i)=>{const[x,y]=[v[2],v[3]],t=STEPS[v[1]];
+    s+=`<g class="inv" data-inv="${i}"><title>${v[0]}: ${v[4]}</title><polygon points="${x},${y-16} ${x+17},${y+13} ${x-17},${y+13}"/><text x="${x}" y="${y+26}" text-anchor="middle">${v[0]}</text></g>`;});
+  for(const k in S){const st=S[k];const[cx,cy]=center(st);
+    const cls=["step",k===pmState.sel?"sel":"",k===bn?"bn":""].join(" ");
+    s+=`<g class="${cls}" data-k="${k}" tabindex="0" role="button" aria-label="${st.n}">`;
+    if(st.shape==="oval")s+=`<rect x="${st.x}" y="${st.y}" width="${st.w}" height="${st.h}" rx="${st.h/2}"/>`;
+    else if(st.shape==="dia")s+=`<polygon points="${cx},${st.y} ${st.x+st.w},${cy} ${cx},${st.y+st.h} ${st.x},${cy}"/>`;
+    else s+=`<rect x="${st.x}" y="${st.y}" width="${st.w}" height="${st.h}" rx="3"/>`;
+    const words=st.n.split(" "),lines=[];let cur="";const max=st.shape==="dia"?12:24;
+    words.forEach(w=>{if((cur+" "+w).trim().length>max){lines.push(cur.trim());cur=w;}else cur+=" "+w;});lines.push(cur.trim());
+    const hasCap=st.cap!==undefined, ty=cy-(lines.length-1)*7-(hasCap?7:0)+4;
+    lines.forEach((l,j)=>{s+=`<text x="${cx}" y="${ty+j*14}" text-anchor="middle" font-weight="600">${l}</text>`;});
+    if(hasCap){const r=k==="order"?st.cap:rate(k);s+=`<text class="cap" x="${cx}" y="${ty+lines.length*14+2}" text-anchor="middle">${(+r.toFixed(1))} ${st.u}${st.res>1||pmState.res[k]?" · "+resN(k)+"×":""}</text>`;}
+    let tx=st.x;const tags=[...st.tags];if(k===bn&&!tags.includes("B1"))tags.unshift("B");
+    if(k!==bn&&tags.includes("B1"))tags.splice(tags.indexOf("B1"),1);
+    tags.forEach(t=>{const c=t.startsWith("Q")?"q":t.startsWith("B")?"b":"cr";s+=`<text class="lbl ${c}" x="${tx}" y="${st.y-5}">${t==="B"?"B1":t}</text>`;tx+=t.length*8+8;});
+    s+=`</g>`;}
+  $("#pm").innerHTML=s;
+  $$("#pm .step").forEach(g=>{const f=()=>{pmState.sel=g.dataset.k;pmDraw();};g.addEventListener("click",f);g.addEventListener("keydown",e=>{if(e.key==="Enter"||e.key===" "){e.preventDefault();f();}});});
+  $$("#pm .inv").forEach(g=>g.addEventListener("click",()=>{pmState.sel=INV[g.dataset.inv][1];pmDraw();}));
+  pmDetail(bn); capUpdate(bn);
+}
+function pmDetail(bn){
+  const k=pmState.sel, st=STEPS[k];
+  $("#pmName").textContent=st.n;
+  const tags=[...st.tags.filter(t=>t!=="B1")];if(k===bn)tags.unshift("B1");
+  $("#pmTags").innerHTML=tags.map(t=>`<span class="tag ${t.startsWith("Q")?"q":t.startsWith("B")?"b":"cr"}">${t.startsWith("Q")?"Quality "+t:t.startsWith("B")?"Bottleneck":"Critical resource "+t}</span>`).join("")+(st.offline?`<span class="tag">Off the main line</span>`:"");
+  $("#pmDesc").textContent=st.t;
+  const inv=INV.filter(v=>v[1]===k);
+  let h="";
+  if(inv.length)h+=`<p class="small"><b>Inputs:</b> ${inv.map(v=>v[0]+" ("+v[4]+")").join("; ")}</p>`;
+  if(st.cap!==undefined&&k!=="order"){
+    h+=`<div style="display:flex;align-items:center;justify-content:space-between;gap:10px;margin-top:12px"><span class="small">${resN(k)} ${st.rn}${resN(k)>1?"s":""} · <b class="mono">${(+rate(k).toFixed(1))}</b> ${st.u} per line</span><span class="stepbtns"><button aria-label="Remove one" data-d="-1">−</button><button aria-label="Add one" data-d="1">+</button></span></div>`;
+  }
+  $("#pmRes").innerHTML=h;
+  $$("#pmRes button").forEach(b=>b.addEventListener("click",()=>{const n=Math.max(1,Math.min(st.res*4,resN(k)+ +b.dataset.d));pmState.res[k]=n;pmDraw();}));
+}
+function capUpdate(bn){
+  const i=pmState.yr, sh=pmState.sh, gross=rate(bn)*sh, cap=gross-RLOAD[i], d=GDEM[i], u=DEM[i]/gross;
+  $("#shiftsOut").textContent=sh;
+  $$("#yrPills .pill").forEach((p,j)=>p.classList.toggle("on",j===i));
+  $("#capKV").innerHTML=`<dt>Garden demand</dt><dd class="mono">${d.toFixed(2)} units/hr (${Math.round(d*2000).toLocaleString()} a year)</dd><dt>Roadside load</dt><dd class="mono">${RLOAD[i].toFixed(2)} nodes/hr (${Math.round(FC.rUnits[i])} systems × 40)</dd><dt>Bottleneck</dt><dd>${STEPS[bn].n} · ${(+rate(bn).toFixed(1))}/hr</dd><dt>Garden capacity</dt><dd class="mono">${cap.toFixed(2)} units/hr across ${sh} line${sh>1?"s":""}</dd><dt>Utilization</dt><dd class="mono"><b>${(u*100).toFixed(0)}%</b></dd>`;
+  const m=$("#capMeter");m.className="meter"+(u>1?" over":u>.85?" warn":"");m.querySelector("i").style.width=Math.min(100,u*100)+"%";
+  $("#capNote").textContent=u>1?"Over capacity: add an assembly line or add resources at the bottleneck.":u>.85?"Tight: little room for rework, absences or a demand spike.":"Healthy: room to absorb rework and seasonal peaks.";
+}
+function capTable(){
+  $("#capTbl").innerHTML=PLAN.map((p,i)=>{const save=pmState;pmState={yr:i,sh:p.sh,res:{...p.res},sel:""};const bn=MAIN.reduce((a,k)=>rate(k)<rate(a)?k:a,MAIN[0]);const g=rate(bn)*p.sh;pmState=save;const u=DEM[i]/g,c=g-RLOAD[i];
+    return`<tr><td>Y${i+1}</td><td class="r">${GDEM[i].toFixed(2)}</td><td class="r">${p.sh}</td><td class="r">${c.toFixed(2)}</td><td class="r"><b>${(u*100).toFixed(0)}%</b></td><td class="small">${p.note}</td></tr>`;}).join("");
+}
+function pmInit(){
+  $("#yrPills").innerHTML=YRS.map((y,i)=>`<button class="pill" data-i="${i}">Y${i+1}</button>`).join("");
+  $$("#yrPills .pill").forEach(b=>b.addEventListener("click",()=>{applyPlan(+b.dataset.i);pmDraw();}));
+  $("#shifts").addEventListener("input",e=>{pmState.sh=+e.target.value;pmDraw();});
+  $("#pmReset").addEventListener("click",()=>{applyPlan(pmState.yr);pmDraw();});
+  applyPlan(0);capTable();pmDraw();
+}
+
+/* ---------- facility floor plan ---------- */
+function floor(){
+  const Z=[ // x,y,w,h,label,sqft,fill
+    [10,10,150,110,"Receiving & incoming inspection","1,500","var(--surface-2)"],
+    [10,120,150,200,"Assembly lines","4,500","var(--sign)"],
+    [160,220,140,100,"Test & calibration","1,800","var(--sign)"],
+    [300,220,110,100,"Garden pack-out","1,000","var(--sign)"],
+    [410,220,100,100,"Roadside pole & sign","1,000","var(--sign)"],
+    [300,90,210,130,"Finished goods & staging","2,500","var(--surface-2)"],
+    [300,10,210,80,"Shipping dock","500","var(--surface-2)"],
+    [160,10,140,210,"Front office: management, customer service, R&D","4,295","var(--surface)"]
+  ];
+  let s="";
+  Z.forEach(z=>{s+=`<rect class="z" x="${z[0]}" y="${z[1]}" width="${z[2]}" height="${z[3]}" fill="${z[6]}"/>`;
+    const words=z[4].split(" ");const lines=[];let c="";words.forEach(w=>{if((c+" "+w).length>17){lines.push(c.trim());c=w;}else c+=" "+w;});lines.push(c.trim());
+    const cy=z[1]+z[3]/2-(lines.length*13)/2+8;
+    lines.forEach((l,j)=>{s+=`<text x="${z[0]+z[2]/2}" y="${cy+j*13}" text-anchor="middle" style="fill:${z[6]==="var(--sign)"?"var(--sign-ink)":"var(--ink)"}">${l}</text>`;});
+    s+=`<text class="s" x="${z[0]+z[2]/2}" y="${cy+lines.length*13+2}" text-anchor="middle" style="fill:${z[6]==="var(--sign)"?"var(--sign-ink)":"var(--muted)"}">${z[5]} sq ft</text>`;});
+  s+=`<polyline points="85,40 85,290 230,290 355,290 355,160 405,160 405,50" fill="none" stroke="var(--alert)" stroke-width="3" stroke-dasharray="7 6" marker-end="url(#fa)"/><defs><marker id="fa" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto"><path d="M0 0L10 5L0 10z" fill="var(--alert)"/></marker></defs>`;
+  $("#floor").innerHTML=s;
+}
+
+/* ---------- org chart ---------- */
+const ORG=[
+  {t:"Engineering & Technology VP",c:123635,k:[["Firmware & software engineers",2,232509],["Electrical engineers",2,194378],["IT systems administrator",1,103544]]},
+  {t:"VP Finance & Administration",c:171336,k:[["Accountants",2,209138],["AP/AR specialist",1,71768],["HR manager",1,97189],["HR specialist",1,70061,1]]},
+  {t:"Marketing Coordinator",c:140021,k:[]},
+  {t:"Digital Marketing & Web Specialist",c:110731,k:[]},
+  {t:"Sales Manager",c:138541,k:[["Government bids specialists",2,205232],["Inside sales reps",16,697867],["Customer support reps",2,168958]]},
+  {t:"Operations VP",c:214270,k:[["Production manager",1,120124],["Production supervisors",2,181668,1],["Node assembly technicians",18,1261107,2],["Quality & test technicians",6,494582,2],["Maintenance technicians",2,189599,2],["Supply chain manager",1,116254],["Shipping & receiving associates",8,609967,1],["Field service supervisor",1,110424],["Field service technicians",4,331821,1]]}
+];
+function org(){
+  const box=(t,n,c,cls="")=>`<div class="ob ${cls}" tabindex="0" data-t="${t}" data-n="${n}" data-c="${c}"><b>${t}</b><span class="n">${n>1?"("+n+")":""}${c?" "+fmt(c):""}</span></div>`;
+  let h=box("Board of Directors",0,0,"top")+`<div class="vline"></div>`;
+  h+=`<div style="display:flex;align-items:center;gap:0">${box("General Manager",1,303140,"top")}<div style="width:24px;height:1.5px;background:var(--ink)"></div>${box("Executive Assistant",1,179368)}</div><div class="vline"></div>`;
+  h+=`<div class="org-row" id="orgRow">`+ORG.map(d=>{
+    const n=1+d.k.reduce((a,k)=>a+k[1],0), tot=d.c+d.k.reduce((a,k)=>a+k[2],0);
+    return`<div class="col">${box(d.t,1,d.c)}<span class="small muted" style="margin-top:4px">${n} ${n>1?"people":"person"} · ${fmtMs(tot)}</span><div class="sub">${d.k.map(k=>`<div style="margin-left:${(k[3]||0)*16}px">${box(k[0],k[1],k[2])}</div>`).join("")}</div></div>`;}).join("")+`</div>`;
+  $("#org").innerHTML=h;
+  const row=$("#orgRow"),cols=[...row.children];
+  const place=()=>{const r=row.getBoundingClientRect();const f=cols[0].firstElementChild.getBoundingClientRect(),l=cols[cols.length-1].firstElementChild.getBoundingClientRect();row.style.setProperty("--l",(f.left+f.width/2-r.left)+"px");row.style.setProperty("--r2",(r.right-(l.left+l.width/2))+"px");};
+  place();addEventListener("resize",place);
+  $$("#org .ob").forEach(b=>{const f=()=>{$$("#org .ob").forEach(x=>x.classList.remove("sel"));b.classList.add("sel");const n=+b.dataset.n,c=+b.dataset.c;
+    $("#orgOut").textContent=n?`Selected: ${b.dataset.t} · ${n} ${n>1?"people":"person"} · ${fmt(c)} loaded cost in Year 2${n>1?" ("+fmt(c/n)+" each)":""}.`:"Selected: Board of Directors · governs the company and appoints the General Manager.";};
+    b.addEventListener("click",f);b.addEventListener("keydown",e=>{if(e.key==="Enter")f();});});
+}
+
+/* ---------- Maslow ---------- */
+const MAS=[
+  ["Self-actualization","Shared purpose: clear pathways for floor technicians to grow their skills, lead initiatives and reach their potential inside the company."],
+  ["Esteem","Transparent, merit-based career ladder with published competencies, and unconditional line-stop authority for every technician."],
+  ["Belonging","Stable assembly cells, technical mentorship, and floor-to-field telemetry: serialized units report back, so a team sees that “units from Cell 4 recorded 312 deer crossings on Route 33 last month.”"],
+  ["Safety","Ergonomic safeguards and an elected safety committee; published pay bands, 401(k) match, life and disability cover. Shared boards across both products keep technicians busy through seasonal swings."],
+  ["Physiological","Base pay high enough that money worries don't compete with focus, plus comprehensive health insurance with a predictable premium split."]
+];
+function maslow(){
+  $("#pyr").innerHTML=MAS.map((m,i)=>`<button style="width:${36+i*16}%" data-i="${i}">${m[0]}</button>`).join("");
+  const sel=i=>{$$("#pyr button").forEach((b,j)=>b.classList.toggle("on",j===i));$("#pyrOut").innerHTML=`<b>${MAS[i][0]}.</b> ${MAS[i][1]}`;};
+  $$("#pyr button").forEach(b=>b.addEventListener("click",()=>sel(+b.dataset.i)));sel(2);
+}
+
+/* ---------- what-if model ---------- */
+const BASE={gs1:5,gstep:5,gg:7.5,gp:125,gm:0,rs:5,rp:25000,imc:100};
+const PRE={"Business plan":BASE,"Conservative":{gs1:3,gstep:3,gg:6,gp:115,gm:10,rs:3,rp:25000,imc:100},"Aggressive":{gs1:8,gstep:6,gg:10,gp:135,gm:-10,rs:8,rp:28000,imc:130}};
+const gMatU=[51.31,46.18,46.18,46.18,46.18], rMatU=IS.mat.map((m,i)=>(m-FC.gUnits[i]*gMatU[i])/FC.rUnits[i]);
+function model(a){
+  const out={rev:[],ni:[],units:[],cash:[],gU:[],rU:[]};let cumE=0,cum=0;
+  for(let i=0;i<5;i++){
+    const gPot=FC.gPot[i]*Math.pow((1+a.gg/100)/1.075,i), rPot=FC.rPot[i];
+    const gU=gPot*Math.min(.6,(a.gs1+a.gstep*i)/100), rU=rPot*a.rs/100;
+    const gP=a.gp;
+    const rev=gU*gP+rU*a.rp;
+    const mat=gU*gMatU[i]*(1+a.gm/100)+rU*rMatU[i];
+    const gp=rev-mat-(IS.dl[i]+IS.dlTax[i]+IS.dlBen[i]);
+    const fixedOp=IS.opex[i]-IS.adv[i]-IS.comm[i];
+    const opex=fixedOp+IS.adv[i]*a.imc/100+rev*(IS.comm[i]/IS.rev[i]);
+    const ebt=gp-opex-IS.int[i];
+    cumE+=ebt;const tax=(ebt>0&&cumE>0)?ebt*.25:0; // plan: no tax until cumulative earnings turn positive, then 25%
+    const ni=ebt-tax;cum+=ni-IS.ni[i];
+    out.rev.push(rev);out.ni.push(ni);out.units.push(gU+rU);out.gU.push(gU);out.rU.push(rU);out.cash.push(IS.cash[i]+cum);
+  }
+  return out;
+}
+const W={gs1:["wGs1",v=>v+"%"],gstep:["wGstep",v=>"+"+v+" pts"],gg:["wGg",v=>v+"%"],gp:["wGp",v=>"$"+v],gm:["wGm",v=>(v>0?"+":"")+v+"%"],rs:["wRs",v=>v+"%"],rp:["wRp",v=>"$"+(+v).toLocaleString()],imc:["wImc",v=>v+"% of plan"]};
+function readW(){const a={};for(const k in W){a[k]=+$("#"+W[k][0]).value;$("#"+W[k][0]+"o").textContent=W[k][1](a[k]);}return a;}
+function setW(a){for(const k in W)$("#"+W[k][0]).value=a[k];}
+function runCalc(){
+  if(!wChart)return;
+  const a=readW(), m=model(a), b=model(BASE);
+  const sum=x=>x.reduce((p,c)=>p+c,0);
+  const first=m.ni.findIndex(v=>v>0), minCash=Math.min(...m.cash);
+  const d=(x,y)=>{const p=(x-y)/Math.abs(y)*100;return Math.abs(p)<.5?`<span class="delta">same as plan</span>`:`<span class="delta ${p>0?"up":"dn"}">${p>0?"+":""}${p.toFixed(0)}% vs plan</span>`;};
+  $("#wStats").innerHTML=`<div><b>${fmtMs(sum(m.rev))}</b><span>5-year revenue</span><br>${d(sum(m.rev),sum(b.rev))}</div><div><b>${fmtMs(m.ni[4])}</b><span>2030 net income</span><br>${d(m.ni[4],b.ni[4])}</div><div><b>${first<0?"Not by 2030":YRS[first]}</b><span>first profitable year</span></div><div><b class="${minCash<0?"neg":""}" style="${minCash<0?"color:var(--alert)":""}">${fmtMs(minCash)}</b><span>lowest year-end cash (approx.)</span></div>`;
+  wChart.data.datasets[0].data=m.ni;wChart.data.datasets[1].data=b.ni;wChart.update("none");
+  $("#wTbl").innerHTML=`<tr><td>Revenue</td>${m.rev.map(v=>`<td class="r">${fmtMs(v)}</td>`).join("")}</tr><tr><td>Units</td>${m.units.map(v=>`<td class="r">${Math.round(v).toLocaleString()}</td>`).join("")}</tr><tr class="tot"><td>Net income</td>${m.ni.map(v=>`<td class="r${v<0?" neg":""}">${fmtMs(v)}</td>`).join("")}</tr>`;
+  const d5=(m.gU[4]+m.rU[4]*40)/2000;
+  $("#wCap").innerHTML=`Capacity check: this scenario needs <b>${d5.toFixed(0)} units/hr</b> in 2030, counting 40 nodes per roadside system. The plan's four assembly lines make about 200 good units/hr${d5>200?", so it would need a fifth line or more stations.":d5>180?", so the lines would run above 90%.":", so the plant can keep up."}${minCash<0?" Cash goes negative in at least one year, so this scenario needs extra financing.":""}`;
+}
+function calcInit(){
+  $("#presets").innerHTML=Object.keys(PRE).map((k,i)=>`<button class="pill${i?"":" on"}" data-k="${k}">${k}</button>`).join("");
+  $$("#presets .pill").forEach(b=>b.addEventListener("click",()=>{$$("#presets .pill").forEach(x=>x.classList.remove("on"));b.classList.add("on");setW(PRE[b.dataset.k]);runCalc();}));
+  setW(BASE);
+  for(const k in W)$("#"+W[k][0]).addEventListener("input",()=>{$$("#presets .pill").forEach(x=>x.classList.remove("on"));runCalc();});
+  const roi=()=>{const c=+$("#rCr").value,r=+$("#rRed").value/100,save=c*r*8000;
+    $("#rCro").textContent=c;$("#rRedo").textContent=Math.round(r*100)+"%";
+    $("#rSave").textContent=fmt(save);$("#rPay").textContent=save>0?(25000/save*12).toFixed(1)+" months":"—";
+    $("#rBreak").textContent=(25000/8000).toFixed(1);$("#r5").textContent=fmt(save*5-25000);};
+  $("#rCr").addEventListener("input",roi);$("#rRed").addEventListener("input",roi);roi();
+}
+
+/* ---------- nav highlight ---------- */
+function navSpy(){
+  const links=$$(".nav a.l"),secs=links.map(a=>$(a.getAttribute("href")));
+  const io=new IntersectionObserver(es=>{es.forEach(e=>{if(e.isIntersecting){links.forEach(l=>l.classList.toggle("on",l.getAttribute("href")==="#"+e.target.id));}});},{rootMargin:"-40% 0px -55% 0px"});
+  secs.forEach(s=>s&&io.observe(s));
+}
+
+function init(){
+  fillTables();
+  persp("#perspG",[{n:"WildGuard",e:9,p:9,wg:1,a:"end"},{n:"Orbit Yard Enforcer (sprinkler)",e:6.5,p:7.6,a:"end"},{n:"Hoont solar ultrasonic + strobe",e:5.8,p:6.8,a:"end"},{n:"Generic ultrasonic repeller",e:3.2,p:2.6}]);
+  persp("#perspR",[{n:"CrossTek",e:9.5,p:9.5,a:"end"},{n:"VISEVER",e:3.5,p:7.3},{n:"Animex",e:2.2,p:5.6},{n:"WildGuard",e:6,p:5,wg:1}]);
+  floor();org();maslow();pmInit();calcInit();drawCharts();navSpy();
+  const mq=matchMedia("(prefers-color-scheme: dark)");mq.addEventListener&&mq.addEventListener("change",drawCharts);
+  new MutationObserver(drawCharts).observe(document.documentElement,{attributes:true,attributeFilter:["data-theme"]});
+}
+if(window.Chart)init();else addEventListener("load",init);
+window.WG_fmt=fmt;
+})();
+</script>
+<script>
+(function(){
+"use strict";
+const $=s=>document.querySelector(s), $$=s=>[...document.querySelectorAll(s)];
+const RM=matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+/* header beacons */
+let hdrAlert=0;
+(function(){const L=$("#bcnL"),R=$("#bcnR");let k=0;setInterval(()=>{k++;const fast=hdrAlert>performance.now();if(RM&&!fast){L.classList.add("on");R.classList.remove("on");return;}const on=fast?k%2:Math.floor(k/3)%2;L.classList.toggle("on",!!on);R.classList.toggle("on",!on);},250);})();
+
+if(!window.THREE){$("#statusTxt").textContent="3D viewer could not load in this browser.";return;}
+const V3=THREE.Vector3;
+const canvas=$("#three"), stage=$("#stage");
+const renderer=new THREE.WebGLRenderer({canvas,antialias:true});
+renderer.setPixelRatio(Math.min(2,devicePixelRatio||1));
+renderer.localClippingEnabled=true;
+renderer.outputEncoding=THREE.sRGBEncoding;
+renderer.shadowMap.enabled=true; renderer.shadowMap.type=THREE.PCFSoftShadowMap;
+const camera=new THREE.PerspectiveCamera(40,1,0.02,600);
+const controls=new THREE.OrbitControls(camera,canvas);
+controls.enableDamping=true; controls.dampingFactor=.08; controls.maxPolarAngle=Math.PI*.495; controls.minDistance=.25; controls.maxDistance=160;
+
+/* ---------- helpers ---------- */
+function tex(w,h,draw){const c=document.createElement("canvas");c.width=w;c.height=h;draw(c.getContext("2d"),w,h);const t=new THREE.CanvasTexture(c);t.encoding=THREE.sRGBEncoding;t.anisotropy=4;return t;}
+const DEER_PATH="M70 8l3 9 6-6-2 9 7-3-6 8 5 2-9 3-3 7 4 5-2 8-8 3-26 2-8 6-3 18-5 1 1-17-5 15-5 0 4-19-4-9 4-10 12-5 26-1 5-5 3-6-3-6 2-3 3 3 1-8z";
+const TX={
+  solar:tex(256,170,(g,w,h)=>{g.fillStyle="#c9d1d6";g.fillRect(0,0,w,h);g.fillStyle="#0f2347";g.fillRect(6,6,w-12,h-12);g.strokeStyle="#5f7fb0";g.lineWidth=1.2;for(let x=6;x<w;x+=(w-12)/8){g.beginPath();g.moveTo(x,6);g.lineTo(x,h-6);g.stroke();}for(let y=6;y<h;y+=(h-12)/5){g.beginPath();g.moveTo(6,y);g.lineTo(w-6,y);g.stroke();}g.globalAlpha=.18;const gr=g.createLinearGradient(0,0,w,h);gr.addColorStop(0,"#fff");gr.addColorStop(.5,"#0000");g.fillStyle=gr;g.fillRect(0,0,w,h);}),
+  radar:tex(128,128,(g,w,h)=>{g.fillStyle="#13532f";g.fillRect(0,0,w,h);g.fillStyle="#d8b14a";for(let i=0;i<3;i++)for(let j=0;j<4;j++)g.fillRect(18+i*34,14+j*26,14,14);g.fillStyle="#222";g.fillRect(40,104,48,16);}),
+  pcb:tex(256,170,(g,w,h)=>{g.fillStyle="#145a32";g.fillRect(0,0,w,h);g.strokeStyle="#2f8a52";g.lineWidth=2;for(let i=0;i<26;i++){g.beginPath();let x=Math.random()*w,y=Math.random()*h;g.moveTo(x,y);x+=Math.random()*80-40;g.lineTo(x,y);y+=Math.random()*60-30;g.lineTo(x,y);g.stroke();}g.fillStyle="#d8b14a";for(let i=0;i<40;i++)g.fillRect(Math.random()*w,Math.random()*h,4,4);g.fillStyle="#eee";g.font="bold 15px monospace";g.fillText("WILDGUARD MB-1  ESP32-C3",14,h-14);}),
+  grille:tex(128,128,(g,w,h)=>{g.fillStyle="#1b1d1f";g.fillRect(0,0,w,h);g.strokeStyle="#3a3e42";g.lineWidth=3;for(let r=10;r<64;r+=8){g.beginPath();g.arc(64,64,r,0,7);g.stroke();}g.fillStyle="#555";g.beginPath();g.arc(64,64,10,0,7);g.fill();}),
+  sign:tex(512,512,(g,w,h)=>{g.clearRect(0,0,w,h);g.save();g.translate(w/2,h/2);g.rotate(Math.PI/4);const s=330;g.fillStyle="#f2b705";g.beginPath();g.roundRect?g.roundRect(-s/2,-s/2,s,s,26):g.rect(-s/2,-s/2,s,s);g.fill();g.lineWidth=14;g.strokeStyle="#111";g.beginPath();g.roundRect?g.roundRect(-s/2+16,-s/2+16,s-32,s-32,18):g.rect(-s/2+16,-s/2+16,s-32,s-32);g.stroke();g.restore();g.save();g.translate(w/2-130,h/2-130);g.scale(2.6,2.6);g.fillStyle="#111";g.fill(new Path2D(DEER_PATH));g.restore();}),
+  label:(txt)=>tex(256,64,(g,w,h)=>{g.fillStyle="#111";g.fillRect(0,0,w,h);g.fillStyle="#f2b705";g.font="bold 30px sans-serif";g.textAlign="center";g.textBaseline="middle";g.fillText(txt,w/2,h/2);})
+};
+function M(color,o={}){return new THREE.MeshStandardMaterial(Object.assign({color,roughness:.6,metalness:.05},o));}
+function mesh(geo,mat,pos,rot){const m=new THREE.Mesh(geo,mat);if(pos)m.position.set(...pos);if(rot)m.rotation.set(...rot);m.castShadow=true;m.receiveShadow=true;return m;}
+
+/* ---------- part catalogue ---------- */
+const INFO={
+  enclosure:["Weatherproof enclosure","NEMA 4X / IP66 UV-stabilized polycarbonate. Plastic lets the 24 GHz radar see straight through it; metal would blind the sensor.",{Supplier:"Polycase, Avon OH",Lead:"7 days",Restock:"Fixed quantity"}],
+  lid:["Enclosure front cover","Sealed with a silicone gasket after assembly and pressure-decay tested at Q2.",{Supplier:"Polycase, Avon OH",Seal:"IP66"}],
+  pcb:["Custom main board","ESP32-C3 microcontroller with a LoRa radio, LiFePO4 charger and 5 V boost on one board. The same board goes in both products.",{Supplier:"JLCPCB, Shenzhen",Lead:"21 days",Restock:"Fixed order interval"}],
+  mcu:["ESP32-C3 + LoRa module","Parses radar data, picks a random light and sound pattern, and sends alerts over 915 MHz LoRa. Deep sleep keeps the power budget near 2.7 Wh a day.",{Radio:"915 MHz LoRa",Sleep:"Deep sleep between scans"}],
+  radar:["24 GHz mmWave radar","Primary detector (Hi-Link HLK-LD2461). Duty-cycled to 10% because it has no sleep mode, which cuts the solar and battery size roughly ninefold.",{Supplier:"Shenzhen Hi-Link",Lead:"21 days",Range:"About 6 m per node"}],
+  pir:["Low-power PIR sensor","AM312 backup wake-up sensor. It draws about 12 µA, stays on all the time, and keeps the radar from being a single point of failure.",{Supplier:"Nanyang Senba Optical",Lead:"21 days"}],
+  battery:["LiFePO4 32700 cell","3.2 V, about 6 Ah. Chosen over Li-ion for cold tolerance and cycle life, sized for five overcast days in a Virginia December.",{Supplier:"Himax Electronics, Shenzhen",Lead:"45 days"}],
+  bms:["Low-temperature cutoff","Blocks charging below 0 °C. Charging lithium below freezing permanently damages it, and Virginia freezes every winter.",{Supplier:"Himax Electronics",Status:"Required"}],
+  audio:["Audio module + microSD","DFPlayer Mini playing a randomized library of 100+ clips so deer don't get used to one sound.",{Supplier:"DFRobot, Shanghai",Lead:"14 days"}],
+  amp:["Class D amplifier","Drives the outdoor speaker; the audio module alone can't.",{Supplier:"Digi-Key, Thief River Falls MN",Lead:"2 days",Restock:"Two-bin"}],
+  speaker:["IP66 outdoor speaker","Full-spectrum predator and alarm audio from 2 kHz to 12 kHz, covering the 4–8 kHz band where deer hear best.",{Supplier:"Digi-Key",Lead:"2 days"}],
+  strobe:["High-power LED strobe array","White and RGB LEDs firing randomized, disorienting strobe patterns.",{Supplier:"SuperBrightLEDs, St. Louis MO",Lead:"3 days"}],
+  solar:["Solar panel","Rugged ETFE panel, 5 W. About three times the margin the node needs, to cover leaves, snow and shade.",{Supplier:"Shenzhen Shine Solar",Lead:"30 days"}],
+  glands:["Cable glands, fuses & wiring","IP68 glands, surge protection and the wiring harness that technicians snap in at the bottleneck station.",{Supplier:"Digi-Key",Restock:"Two-bin"}],
+  harness:["Wire harness","Connects radar, PIR, speaker, solar panel and battery to the board. Installing it is the B1 bottleneck at 50 good units an hour per assembly line.",{Station:"B1 · CR1"}],
+  stake:["Ground stake","Holds the compact garden sensor (about 6–8 inches across) just above the plants, so it can be moved around a yard or bed.",{Product:"Garden only"}],
+  clamps:["Band clamps & tamper fasteners","Security screws protect the solar panel, a common theft target.",{Supplier:"McMaster-Carr, Elmhurst IL",Lead:"2 days"}],
+  pole:["6 ft steel pole","US-made A500 steel. Driven about 2 ft into the ground, leaving about 4 ft above grade, which is above deer head height.",{Supplier:"Warrenton Steel, MO",Lead:"7 days"}],
+  antenna:["915 MHz LoRa antenna","External antenna for a strong node-to-sign link along the road.",{Product:"Roadside only"}],
+  port:["External charging port","IP68 panel-mount port so homeowners can top up the battery in a shady yard.",{Product:"Garden only",Supplier:"Digi-Key"}],
+  sign:["Deer crossing warning sign","MUTCD-regulated sign assembly with its own solar power. Two per package, one facing each direction of traffic.",{Source:"Outsourced assembly"}],
+  beacon:["LED warning beacons","Flash only when a node detects an animal, so drivers learn the light means a deer is near right now.",{Trigger:"LoRa alert from any node"}],
+  receiver:["Sign receiver kit","Our LoRa receiver and relay in a weatherproof box on the sign post. It switches the beacons on.",{Made:"WildGuard"}]
+};
+
+/* ---------- node builder ---------- */
+function buildNode(kind,full){
+  const g=new THREE.Group(), parts={};
+  const add=(id,m,ex,shell)=>{m.userData.part=id;m.userData.shell=!!shell;m.userData.home=m.position.clone();m.userData.ex=ex||new V3();const mm=Array.isArray(m.material)?m.material[0]:m.material;m.userData.orig={color:mm.color.clone(),emissive:mm.emissive?mm.emissive.clone():null};(parts[id]=parts[id]||[]).push(m);g.add(m);return m;};
+  const poleM=M(0x9aa3a8,{metalness:.8,roughness:.35});
+  add("pole",mesh(new THREE.BoxGeometry(.045,1.38,.028),poleM,[0,.69,0]),null,true);
+  const encM=M(0xd9dcd6,{roughness:.45}), lidM=M(0xe6e8e3,{roughness:.4});
+  add("enclosure",mesh(new THREE.BoxGeometry(.22,.16,.08),encM,[0,1.0,.085]),new V3(0,0,-.05),true);
+  add("lid",mesh(new THREE.BoxGeometry(.22,.16,.03),lidM,[0,1.0,.14]),new V3(0,0,.32),true);
+  const sp=new THREE.Group();sp.position.set(0,.855,.1);
+  const spH=mesh(new THREE.CylinderGeometry(.05,.044,.045,28),M(0x26292c,{roughness:.7}),[0,0,0],[Math.PI/2,0,0]);
+  add("speaker",spH,new V3(0,-.18,.12),true);spH.position.copy(sp.position);spH.userData.home=sp.position.clone();
+  const gr=mesh(new THREE.CircleGeometry(.046,28),new THREE.MeshStandardMaterial({map:TX.grille,roughness:.8}),[0,.855,.1231]);
+  add("speaker",gr,new V3(0,-.18,.12));
+  add("strobe",mesh(new THREE.BoxGeometry(.17,.024,.022),M(0x2b2f33),[0,1.094,.14]),new V3(0,.14,.24),true);
+  const leds=[];for(let i=0;i<5;i++){const l=mesh(new THREE.SphereGeometry(.008,12,8),M(0xffffff,{emissive:0x222222,roughness:.2}),[-.06+i*.03,1.094,.152]);add("strobe",l,new V3(0,.14,.24));leds.push(l);}
+  const pir=add("pir",mesh(new THREE.SphereGeometry(.018,20,12,0,Math.PI*2,0,Math.PI/2),M(0xf4f4f0,{roughness:.3,transparent:true,opacity:.92}),[.065,.955,.155],[Math.PI/2,0,0]),new V3(.05,0,.4));
+  const solar=new THREE.Group();
+  add("solar",mesh(new THREE.BoxGeometry(.3,.012,.2),[M(0xb8c0c4,{metalness:.6}),M(0xb8c0c4),new THREE.MeshStandardMaterial({map:TX.solar,roughness:.25,metalness:.3}),M(0x777777),M(0xb8c0c4),M(0xb8c0c4)].map(x=>x),[0,1.405,.02],[-.45,0,0]),new V3(0,.32,0));
+  add("clamps",mesh(new THREE.BoxGeometry(.07,.014,.06),M(0x6d757a,{metalness:.7}),[0,.96,.012]),new V3(-.22,0,0));
+  add("clamps",mesh(new THREE.BoxGeometry(.07,.014,.06),M(0x6d757a,{metalness:.7}),[0,1.04,.012]),new V3(-.22,0,0));
+  add("glands",mesh(new THREE.CylinderGeometry(.009,.009,.018,14),M(0x222222),[-.05,.913,.09]),new V3(0,-.12,0));
+  add("glands",mesh(new THREE.CylinderGeometry(.009,.009,.018,14),M(0x222222),[.05,.913,.09]),new V3(0,-.12,0));
+  if(kind==="road")add("antenna",mesh(new THREE.CylinderGeometry(.004,.005,.14,10),M(0x111111),[.09,1.15,.09]),new V3(.06,.3,0));
+  else add("port",mesh(new THREE.CylinderGeometry(.011,.011,.022,16),M(0x1e2a33,{metalness:.5}),[.118,.97,.09],[0,0,Math.PI/2]),new V3(.22,0,0));
+  let radarM=null;
+  if(full){
+    add("pcb",mesh(new THREE.BoxGeometry(.18,.12,.004),new THREE.MeshStandardMaterial({map:TX.pcb,roughness:.5}),[0,1.0,.052]),new V3(0,0,-.02));
+    add("mcu",mesh(new THREE.BoxGeometry(.03,.034,.006),M(0xb7bcc0,{metalness:.8,roughness:.3}),[.035,1.02,.057]),new V3(0,.02,.06));
+    add("mcu",mesh(new THREE.BoxGeometry(.024,.024,.005),M(0x2a2a2a),[-.005,1.025,.057]),new V3(0,.02,.06));
+    radarM=new THREE.MeshStandardMaterial({map:TX.radar,roughness:.4});
+    add("radar",mesh(new THREE.BoxGeometry(.05,.05,.004),radarM,[-.045,1.0,.118]),new V3(0,0,.2));
+    add("battery",mesh(new THREE.CylinderGeometry(.016,.016,.07,24),M(0x2a7bbf,{roughness:.35}),[.0,.937,.085],[0,0,Math.PI/2]),new V3(0,-.16,.1));
+    add("bms",mesh(new THREE.BoxGeometry(.028,.022,.004),M(0x1d3b6e),[.065,.937,.07]),new V3(.12,-.08,.06));
+    add("audio",mesh(new THREE.BoxGeometry(.022,.022,.009),M(0x1d4fa0),[-.075,1.045,.07]),new V3(-.16,.05,.06));
+    add("amp",mesh(new THREE.BoxGeometry(.02,.016,.004),M(0xa3262a),[-.075,1.0,.07]),new V3(-.16,0,.06));
+    const wires=[[[-.045,1.0,.112],[-.05,.98,.09],[-.02,.99,.06]],[[.065,.955,.14],[.07,.97,.1],[.04,1.0,.06]],[[0,.937,.1],[.02,.95,.08],[.03,1.0,.06]],[[0,.88,.1],[-.04,.93,.08],[-.075,.995,.074]],[[.0,1.12,.03],[-.09,1.07,.06],[-.075,1.045,.075]]];
+    const cols=[0xd23b2a,0x1b1b1b,0xe2b100,0x2a6fd6,0xd23b2a];
+    wires.forEach((w,i)=>{const c=new THREE.CatmullRomCurve3(w.map(p=>new V3(...p)));add("harness",mesh(new THREE.TubeGeometry(c,20,.0022,6),M(cols[i])),new V3(0,0,0));});
+  }
+  const cone=new THREE.Mesh(new THREE.ConeGeometry(1.6,5,32,1,true),new THREE.MeshBasicMaterial({color:0x5fd1ff,transparent:true,opacity:.0,side:THREE.DoubleSide,depthWrite:false}));
+  cone.geometry.translate(0,-2.5,0);cone.rotation.x=-Math.PI/2;cone.position.set(-.045,1.0,.12);g.add(cone);
+  const light=new THREE.PointLight(0xfff3d6,0,9,2);light.position.set(0,1.1,.4);g.add(light);
+  const rings=[];for(let i=0;i<3;i++){const r=new THREE.Mesh(new THREE.RingGeometry(.9,1,40),new THREE.MeshBasicMaterial({color:0xf2b705,transparent:true,opacity:0,side:THREE.DoubleSide,depthWrite:false}));r.position.set(0,.855,.13);r.scale.setScalar(.05);g.add(r);rings.push(r);}
+  if(kind==="garden"){const D=.75;
+    for(const id in parts)parts[id].forEach(m=>{if(id==="pole"){m.geometry.dispose();m.geometry=new THREE.BoxGeometry(.03,.42,.02);m.position.set(0,.09,0);m.userData.home=m.position.clone();parts.stake=[m];m.userData.part="stake";}else{m.position.y-=D;m.userData.home.y-=D;}});
+    delete parts.pole;[cone,light,...rings].forEach(o=>o.position.y-=D);}
+  return {g,parts,leds,cone,light,rings,fire:0,kind};
+}
+
+/* ---------- sign builder ---------- */
+function buildSign(){
+  const g=new THREE.Group(),parts={};
+  const add=(id,m)=>{m.userData.part=id;m.userData.home=m.position.clone();m.userData.ex=new V3();m.userData.orig={};(parts[id]=parts[id]||[]).push(m);g.add(m);return m;};
+  add("sign",mesh(new THREE.BoxGeometry(.08,3.1,.08),M(0x9aa3a8,{metalness:.8,roughness:.35}),[0,1.55,-.06]));
+  add("sign",mesh(new THREE.PlaneGeometry(1.3,1.3),new THREE.MeshStandardMaterial({map:TX.sign,transparent:true,roughness:.5,side:THREE.DoubleSide}),[0,2.1,0]));
+  const bm=[];[-.32,.32].forEach(x=>{add("beacon",mesh(new THREE.CylinderGeometry(.15,.15,.08,24),M(0x222222),[x,2.95,.02],[Math.PI/2,0,0]));const lens=add("beacon",mesh(new THREE.CircleGeometry(.12,24),M(0x5a3b07,{emissive:0x000000,roughness:.3}),[x,2.95,.061]));bm.push(lens);});
+  add("receiver",mesh(new THREE.BoxGeometry(.2,.26,.1),M(0xd9dcd6),[0,1.1,.03]));
+  add("receiver",mesh(new THREE.CylinderGeometry(.006,.006,.25,8),M(0x111111),[.08,1.36,.03]));
+  add("sign",mesh(new THREE.BoxGeometry(.5,.02,.32),[M(0xb8c0c4),M(0xb8c0c4),new THREE.MeshStandardMaterial({map:TX.solar,roughness:.25}),M(0x777777),M(0xb8c0c4),M(0xb8c0c4)],[0,3.22,-.12],[-.5,0,0]));
+  const L=new THREE.PointLight(0xffa020,0,14,2);L.position.set(0,2.95,.6);g.add(L);
+  return {g,parts,bm,L};
+}
+
+/* ---------- deer ---------- */
+function buildDeer(){
+  const g=new THREE.Group(),fur=M(0x7a5534,{roughness:.9}),dark=M(0x3a2717,{roughness:.9}),white=M(0xe8e2d6,{roughness:.9});
+  const body=mesh(new THREE.SphereGeometry(1,20,14),fur,[0,1.0,0]);body.scale.set(.72,.34,.27);g.add(body);
+  const neck=mesh(new THREE.CylinderGeometry(.085,.12,.55,12),fur,[.6,1.3,0],[0,0,-.75]);g.add(neck);
+  const head=new THREE.Group();head.position.set(.82,1.55,0);g.add(head);
+  const sk=mesh(new THREE.SphereGeometry(1,14,10),fur,[.08,0,0]);sk.scale.set(.2,.1,.09);head.add(sk);
+  head.add(mesh(new THREE.SphereGeometry(.03,8,6),dark,[.27,-.02,0]));
+  [-1,1].forEach(s=>{const e=mesh(new THREE.ConeGeometry(.04,.14,8),fur,[-.02,.1,s*.07],[s*.5,0,.2]);head.add(e);
+    const a=new THREE.Group();a.position.set(0,.08,s*.04);head.add(a);
+    [[0,.18,0,0,0,s*.25],[.05,.3,s*.04,0,0,-.6],[.02,.22,s*.06,.6*s,0,.3]].forEach(t=>{a.add(mesh(new THREE.CylinderGeometry(.008,.012,.22,6),M(0xcbb994),[t[0],t[1],t[2]],[t[3],t[4],t[5]]));});});
+  g.add(mesh(new THREE.SphereGeometry(.07,8,6),white,[-.72,1.12,0]));
+  const legs=[];[[.42,.14],[.42,-.14],[-.45,.14],[-.45,-.14]].forEach((p,i)=>{const piv=new THREE.Group();piv.position.set(p[0],.98,p[1]);g.add(piv);piv.add(mesh(new THREE.CylinderGeometry(.045,.03,.98,8),i<2?fur:fur,[0,-.49,0]));piv.add(mesh(new THREE.BoxGeometry(.06,.04,.05),dark,[0,-.97,0]));legs.push(piv);});
+  return {g,legs,head,phase:0};
+}
+
+/* ---------- world ---------- */
+const scenes={};
+function forest(scene,zMin,zMax,xr,n,avoid){
+  const trunks=new THREE.InstancedMesh(new THREE.CylinderGeometry(.18,.25,3,6),M(0x3b2a1c),n);
+  const crowns=new THREE.InstancedMesh(new THREE.ConeGeometry(1.6,5,7),M(0x1f3b26,{roughness:.9}),n);
+  const m=new THREE.Matrix4(),q=new THREE.Quaternion();let k=0;
+  while(k<n){const x=(Math.random()*2-1)*xr,z=(zMin+Math.random()*(zMax-zMin))*(Math.random()<.5?1:-1);if(avoid&&avoid(x,z))continue;const s=.7+Math.random()*.8;
+    m.compose(new V3(x,1.5*s,z),q,new V3(s,s,s));trunks.setMatrixAt(k,m);m.compose(new V3(x,(3+2.2)*s,z),q,new V3(s,s,s));crowns.setMatrixAt(k,m);k++;}
+  trunks.castShadow=crowns.castShadow=true;scene.add(trunks,crowns);
+}
+function baseScene(){
+  const s=new THREE.Scene();s.background=new THREE.Color(0x1a2a30);s.fog=new THREE.Fog(0x1a2a30,40,170);
+  s.add(new THREE.HemisphereLight(0xa9c2d0,0x2b2a1a,.75));
+  const moon=new THREE.DirectionalLight(0xc8d8ff,.9);moon.position.set(-20,40,25);moon.castShadow=true;moon.shadow.mapSize.set(2048,2048);
+  const sc=moon.shadow.camera;sc.left=-30;sc.right=30;sc.top=30;sc.bottom=-30;sc.near=1;sc.far=120;moon.shadow.bias=-.0004;s.add(moon);
+  const ground=mesh(new THREE.PlaneGeometry(400,400),M(0x22341f,{roughness:1}),[0,0,0],[-Math.PI/2,0,0]);ground.castShadow=false;s.add(ground);
+  return s;
+}
+function buildRoad(){
+  const s=baseScene(), road=new THREE.Group();s.add(road);
+  road.add(mesh(new THREE.PlaneGeometry(400,7.4),M(0x2c2f31,{roughness:.95}),[0,.01,0],[-Math.PI/2,0,0]));
+  [3.55,-3.55].forEach(z=>road.add(mesh(new THREE.PlaneGeometry(400,.14),M(0xe6e6e0),[0,.02,z],[-Math.PI/2,0,0])));
+  const dash=new THREE.InstancedMesh(new THREE.PlaneGeometry(3,.12),M(0xf2b705,{emissive:0x332200}),160);const m=new THREE.Matrix4();
+  for(let i=0;i<80;i++){[-.1,.1].forEach((z,j)=>{m.makeRotationX(-Math.PI/2);m.setPosition(-200+i*5,.021,z);dash.setMatrixAt(i*2+j,m);});}s.add(dash);
+  forest(s,9,45,120,240,(x,z)=>z>0&&Math.abs(x)<48);
+  const halos=[];
+  const nodes=[];
+  [-28,-20,-12,-4,4,12,20,28].forEach(x=>[1,-1].forEach(side=>{const hero=(x===4&&side===1);const n=buildNode("road",hero);n.g.position.set(x,0,side*5);if(side<0)n.g.rotation.y=Math.PI;s.add(n.g);nodes.push(n);const hl=new THREE.Mesh(new THREE.CircleGeometry(6,40),new THREE.MeshBasicMaterial({color:0xf2b705,transparent:true,opacity:.1,depthWrite:false}));hl.rotation.x=-Math.PI/2;hl.position.set(x,.03,side*5);hl.visible=false;s.add(hl);halos.push(hl);if(hero)s.userData.hero=n;}));
+  const signs=[];[[-37,5.4,-Math.PI/2],[37,-5.4,Math.PI/2]].forEach(p=>{const sg=buildSign();sg.g.position.set(p[0],0,p[1]);sg.g.rotation.y=p[2];s.add(sg.g);signs.push(sg);});
+  const car=new THREE.Group();const paint=M(0x8a1f1f,{metalness:.5,roughness:.35});
+  car.add(mesh(new THREE.BoxGeometry(4.3,.75,1.8),paint,[0,.65,0]));car.add(mesh(new THREE.BoxGeometry(2.3,.6,1.6),M(0x1b2328,{metalness:.6,roughness:.15}),[-.3,1.3,0]));
+  [[1.4,.9],[1.4,-.9],[-1.4,.9],[-1.4,-.9]].forEach(p=>car.add(mesh(new THREE.CylinderGeometry(.34,.34,.25,14),M(0x111111),[p[0],.34,p[1]],[Math.PI/2,0,0])));
+  [.6,-.6].forEach(z=>car.add(mesh(new THREE.BoxGeometry(.05,.15,.35),M(0xffffff,{emissive:0xfff4cc,emissiveIntensity:1.5}),[2.16,.75,z])));
+  car.position.set(-80,0,1.75);s.add(car);
+  const deer=buildDeer();deer.g.position.set(9,0,21);s.add(deer.g);
+  Object.assign(s.userData,{nodes,signs,car,deer,halos,kind:"road",camN:{t:[4,1.07,5.1],p:[4.95,1.42,6.25]},camS:{t:[6,0.9,11],p:[-3.5,5,-3.2]},camO:{t:[0,0,-1],p:[-6,34,48]},deerStart:[9,0,21],deerGoal:[5.5,0,7.4],pick:[]});
+  return s;
+}
+function buildGarden(){
+  const s=baseScene();
+  s.add(mesh(new THREE.BoxGeometry(14,5,8),M(0x8f8a7e,{roughness:.9}),[0,2.5,-10]));
+  s.add(mesh(new THREE.ConeGeometry(10.5,3,4),M(0x3b2d2a),[0,6.5,-10],[0,Math.PI/4,0]));
+  [[-4,1.2,-5.95],[3,1.2,-5.95]].forEach(p=>s.add(mesh(new THREE.BoxGeometry(1.4,1.2,.05),M(0xffd89a,{emissive:0xffc66b,emissiveIntensity:.7}),p)));
+  s.add(mesh(new THREE.BoxGeometry(1.1,2.1,.05),M(0x3d2b20),[0,1.05,-5.95]));
+  const soil=M(0x3f2b1c,{roughness:1}),leaf=M(0x2f7a3a,{roughness:.8}),tom=M(0xc8322b,{roughness:.5});
+  [[-2.2,-2.2],[1.4,-2.2],[-2.2,-.2],[1.4,-.2]].forEach(b=>{s.add(mesh(new THREE.BoxGeometry(2.6,.3,1.3),soil,[b[0]+.5,.15,b[1]]));
+    for(let i=0;i<6;i++){const x=b[0]-.5+i*.4,z=b[1]+(i%2?.25:-.25);s.add(mesh(new THREE.SphereGeometry(.22+Math.random()*.08,10,8),leaf,[x+.15,.48,z]));if(i%2)s.add(mesh(new THREE.SphereGeometry(.05,8,6),tom,[x+.2,.6,z+.12]));}});
+  const post=M(0x6b5139);for(let i=-8;i<=8;i+=2){s.add(mesh(new THREE.BoxGeometry(.1,1.0,.1),post,[i,.5,3.2]));}
+  s.add(mesh(new THREE.BoxGeometry(16.2,.06,.04),post,[0,.85,3.2]));s.add(mesh(new THREE.BoxGeometry(16.2,.06,.04),post,[0,.45,3.2]));
+  forest(s,14,50,90,180);
+  const n=buildNode("garden",true);n.g.position.set(.2,0,1.3);s.add(n.g);
+  const deer=buildDeer();deer.g.position.set(7,0,16);s.add(deer.g);
+  Object.assign(s.userData,{nodes:[n],hero:n,signs:[],deer,kind:"garden",camN:{t:[.2,.32,1.4],p:[1.0,.72,2.4]},camS:{t:[2.5,.6,6],p:[-3.5,3.8,-3.8]},camO:{t:[0,.5,-1],p:[11,8.5,15]},deerStart:[7,0,16],deerGoal:[.6,0,-1.0],pick:[]});
+  return s;
+}
+scenes.road=buildRoad();scenes.garden=buildGarden();
+for(const k in scenes){const s=scenes[k];s.traverse(o=>{if(o.isMesh&&o.userData.part)s.userData.pick.push(o);});}
+
+/* ---------- state ---------- */
+let cur="road",view="normal",exT=0,exGoal=0,sel=null,spin=false,audioOn=false;
+const ghost=new THREE.MeshBasicMaterial({color:0x7fd8ff,transparent:true,opacity:.1,depthWrite:false,side:THREE.DoubleSide});
+const edgeMat=new THREE.LineBasicMaterial({color:0x7fd8ff,transparent:true,opacity:.55});
+const cutPlane=new THREE.Plane(new V3(-1,0,0),0);
+const opts={light:true,sound:true,range:6};
+function S(){return scenes[cur];}
+function hero(){return S().userData.hero;}
+
+function applyLook(){
+  const h=hero();
+  for(const id in h.parts)h.parts[id].forEach(m=>{
+    const shell=m.userData.shell, o=m.userData.orig, mats=Array.isArray(m.material)?m.material:[m.material];
+    if(!m.userData.real)m.userData.real=m.material;
+    if(view==="xray"&&shell){m.material=ghost;if(!m.userData.edges){const e=new THREE.LineSegments(new THREE.EdgesGeometry(m.geometry),edgeMat);m.add(e);m.userData.edges=e;}m.userData.edges.visible=true;}
+    else{m.material=m.userData.real;if(m.userData.edges)m.userData.edges.visible=false;}
+    const rm=Array.isArray(m.material)?m.material:[m.material];
+    rm.forEach(mt=>{if(mt===ghost)return;mt.clippingPlanes=(view==="cutaway"&&shell)?[cutPlane]:[];mt.clipShadows=true;mt.side=(view==="cutaway"&&shell)?THREE.DoubleSide:THREE.FrontSide;mt.needsUpdate=true;
+      if(mt.emissive){if(id===sel)mt.emissive.setHex(0x6a4c00);else if(view==="xray"&&!shell)mt.emissive.setHex(0x1d3440);else if(o.emissive)mt.emissive.copy(o.emissive);}});
+    if(id==="harness")m.visible=view!=="exploded"||exT<.05;
+  });
+  h.cone.material.opacity=(view==="xray"||view==="cutaway")?.08:0;
+  const wp=new V3();h.parts.enclosure[0].getWorldPosition(wp);cutPlane.constant=wp.x+.0;
+  if(cur==="road")cutPlane.normal.set(-1,0,0);
+}
+function camTo(c,instant){const t=new V3(...c.t),p=new V3(...c.p);if(instant){camera.position.copy(p);controls.target.copy(t);return;}tween={from:camera.position.clone(),fromT:controls.target.clone(),p,t,k:0};}
+let tween=null;
+function setView(v){
+  view=v;$$("#viewSeg button").forEach(b=>b.classList.toggle("on",b.dataset.v===v));
+  exGoal=v==="exploded"?1:0;
+  const u=S().userData;
+  if(v==="overview")camTo(u.camO);
+  else{const c=u.camN;if(v==="exploded")camTo({t:c.t,p:c.t.map((x,i)=>x+(c.p[i]-x)*1.45)});else camTo(c);}
+  applyLook();
+}
+function setProduct(p){
+  if(p===cur)return;resetSim();cur=p;sel=null;
+  $$("#prodSeg button").forEach(b=>b.classList.toggle("on",b.dataset.p===p));
+  $("#roadPanel").hidden=p!=="road";$("#gardenPanel").hidden=p!=="garden";
+  buildPartList();showPart(null);
+  const u=S().userData;camTo(view==="overview"?u.camO:u.camN,true);setView(view);
+}
+$$("#prodSeg button").forEach(b=>b.addEventListener("click",()=>setProduct(b.dataset.p)));
+$$("#viewSeg button").forEach(b=>b.addEventListener("click",()=>setView(b.dataset.v)));
+$("#spinBtn").addEventListener("click",e=>{spin=!spin;controls.autoRotate=spin;controls.autoRotateSpeed=1.2;e.currentTarget.textContent=spin?"Stop rotating":"Auto-rotate";});
+
+/* ---------- part panel ---------- */
+function info(id){return INFO[id];}
+function buildPartList(){
+  const ids=Object.keys(hero().parts).concat(cur==="road"?["sign","beacon","receiver"]:[]);
+  $("#partList").innerHTML=ids.map(id=>`<button data-id="${id}">${info(id)[0]}</button>`).join("");
+  $$("#partList button").forEach(b=>b.addEventListener("click",()=>{selectPart(b.dataset.id);}));
+}
+function showPart(id){
+  if(!id){$("#pName").textContent=cur==="road"?"Roadside sensor node":"Garden sensor node";$("#pDesc").textContent=cur==="road"?"One of the 16 or more solar nodes in a roadside system (about 40 on an average site). Each one detects an animal, scares it off the road, and radios both warning signs.":"A compact 6–8 inch solar sensor on a ground stake for yards and gardens. Owners can switch the light or the sound off in the app.";$("#pKV").innerHTML="";}
+  else{const I=info(id);$("#pName").textContent=I[0];$("#pDesc").textContent=I[1];$("#pKV").innerHTML=Object.entries(I[2]).map(([k,v])=>`<dt>${k}</dt><dd>${v}</dd>`).join("");}
+  $$("#partList button").forEach(b=>b.classList.toggle("on",b.dataset.id===id));
+}
+function selectPart(id){
+  sel=id;showPart(id);applyLook();
+  if(["sign","beacon","receiver"].includes(id)&&cur==="road"){const sg=S().userData.signs[0].g;const p=sg.position;camTo({t:[p.x,2,p.z],p:[p.x-6,2.6,p.z+4]});if(view!=="overview"){view="normal";$$("#viewSeg button").forEach(b=>b.classList.toggle("on",b.dataset.v==="normal"));}}
+}
+
+/* ---------- picking ---------- */
+const ray=new THREE.Raycaster(),ptr=new THREE.Vector2();let down=null;
+function pick(e){const r=canvas.getBoundingClientRect();ptr.set(((e.clientX-r.left)/r.width)*2-1,-((e.clientY-r.top)/r.height)*2+1);ray.setFromCamera(ptr,camera);const objs=S().userData.pick.filter(o=>o.visible&&(o.parent===hero().g||!hero().g.children.includes(o)));const hits=ray.intersectObjects(objs,false).filter(h=>!(view==="cutaway"&&h.object.userData.shell&&cutPlane.distanceToPoint(h.point)<0));return hits[0];}
+canvas.addEventListener("pointermove",e=>{const h=pick(e),tip=$("#tip");if(h&&INFO[h.object.userData.part]&&(h.object.parent===hero().g||["sign","beacon","receiver"].includes(h.object.userData.part))){const r=stage.getBoundingClientRect();tip.hidden=false;tip.textContent=INFO[h.object.userData.part][0];tip.style.left=(e.clientX-r.left)+"px";tip.style.top=(e.clientY-r.top)+"px";canvas.style.cursor="pointer";}else{tip.hidden=true;canvas.style.cursor="";}});
+canvas.addEventListener("pointerleave",()=>{$("#tip").hidden=true;});
+canvas.addEventListener("pointerdown",e=>{down=[e.clientX,e.clientY];});
+canvas.addEventListener("pointerup",e=>{if(!down||Math.hypot(e.clientX-down[0],e.clientY-down[1])>5)return;const h=pick(e);if(h){const id=h.object.userData.part;if(h.object.parent===hero().g||["sign","beacon","receiver"].includes(id))selectPart(id);}});
+
+/* ---------- sound ---------- */
+let actx=null;
+function chirp(){
+  try{actx=actx||new (window.AudioContext||window.webkitAudioContext)();const t0=actx.currentTime;const gain=actx.createGain();gain.gain.value=.0001;gain.connect(actx.destination);
+    gain.gain.exponentialRampToValueAtTime(.12,t0+.03);gain.gain.setValueAtTime(.12,t0+1.3);gain.gain.exponentialRampToValueAtTime(.0001,t0+1.6);
+    for(let i=0;i<9;i++){const o=actx.createOscillator();o.type=i%3?"square":"sawtooth";const f=2000+Math.random()*6000;o.frequency.setValueAtTime(f,t0+i*.16);o.frequency.exponentialRampToValueAtTime(f*(Math.random()<.5?.6:1.5),t0+i*.16+.14);o.connect(gain);o.start(t0+i*.16);o.stop(t0+i*.16+.15);}
+  }catch(e){}
+}
+$("#soundBtn").addEventListener("click",()=>{audioOn=true;chirp();});
+
+/* ---------- app controls ---------- */
+const logA=$("#appLog"),logR=$("#roadLog");
+function log(el,txt){const t=new Date();const d=document.createElement("div");d.innerHTML=`<b>${t.toLocaleTimeString([], {hour:"2-digit",minute:"2-digit",second:"2-digit"})}</b> ${txt}`;if(el.firstChild&&el.firstChild.textContent.startsWith("No visits"))el.innerHTML="";el.prepend(d);}
+$("#optLight").addEventListener("change",e=>{opts.light=e.target.checked;log(logA,`Strobe light turned ${opts.light?"on":"off"}`);});
+$("#optSound").addEventListener("change",e=>{opts.sound=e.target.checked;log(logA,`Sound deterrent turned ${opts.sound?"on":"off"}`);});
+$("#optRange").addEventListener("input",e=>{opts.range=+e.target.value;$("#rangeOut").textContent=opts.range+" m";});
+
+/* ---------- simulation ---------- */
+let sim=null;
+function status(txt,alert){$("#statusTxt").textContent=txt;$("#status").classList.toggle("alert",!!alert);}
+function resetSim(){
+  sim=null;for(const k in scenes){const u=scenes[k].userData;u.deer.g.position.set(...u.deerStart);u.nodes.forEach(n=>{n.fire=0;});u.signs.forEach(s=>s.on=0);}
+  status("Monitoring · radar duty-cycled, PIR always on");
+}
+$("#simBtn").addEventListener("click",()=>{
+  resetSim();const u=S().userData;
+  sim={phase:"approach",t:0,deer:u.deer,from:new V3(...u.deerStart),goal:new V3(...u.deerGoal),pos:new V3(...u.deerStart),speed:2.2};
+  status("Animal approaching…");
+  if(view==="exploded")setView("normal");
+  if(view!=="overview")camTo(u.camS);
+});
+function nearNodes(p,r){return S().userData.nodes.filter(n=>{const w=new V3();n.g.getWorldPosition(w);return Math.hypot(w.x-p.x,w.z-p.z)<r;});}
+function stepSim(dt,now){
+  if(!sim)return;const u=S().userData,d=sim.deer;sim.t+=dt;
+  const range=cur==="garden"?opts.range:6;
+  const walk=(target,spd)=>{const v=target.clone().sub(sim.pos);v.y=0;const L=v.length();if(L<.05)return true;v.multiplyScalar(Math.min(1,spd*dt/L));sim.pos.add(v);d.g.position.copy(sim.pos);const ang=Math.atan2(-v.z,v.x);let da=ang-d.g.rotation.y;while(da>Math.PI)da-=2*Math.PI;while(da<-Math.PI)da+=2*Math.PI;d.g.rotation.y+=da*Math.min(1,dt*6);d.phase+=dt*spd*3.2;return false;};
+  if(sim.phase==="approach"){
+    const done=walk(sim.goal,sim.speed);
+    const hits=nearNodes(sim.pos,range);
+    if(hits.length){
+      const deter=cur==="road"||opts.light||opts.sound;
+      if(cur==="garden"&&!deter){sim.phase="eat";status("Detected · deterrents are off in the app, so the node only logs the visit",true);log(logA,"Deer detected. Light and sound are off, so no deterrent fired.");return;}
+      sim.phase="alert";sim.t=0;sim.fired=hits;hits.forEach(n=>n.fire=now);
+      hdrAlert=now+4000;
+      if(cur==="road"){u.signs.forEach(s=>s.on=now);sim.packets=u.signs.map(s=>({s,k:0}));status("Deer detected · deterrent firing · LoRa alert sent to both signs",true);log(logR,`Node ${u.nodes.indexOf(hits[0])+1}: deer at ${range} m. Strobe + sound fired, beacons on.`);}
+      else{status(`Deer detected at ${range} m · ${[opts.light&&"strobe",opts.sound&&"sound"].filter(Boolean).join(" + ")} firing`,true);log(logA,`Deer detected at ${range} m. ${[opts.light&&"Strobe",opts.sound&&"sound"].filter(Boolean).join(" and ")} fired.`);}
+      if(audioOn&&(cur==="road"||opts.sound))chirp();
+    }else if(done){sim.phase="eat";}
+  }else if(sim.phase==="alert"){
+    if(sim.t>1.1){sim.phase="flee";const away=sim.pos.clone().sub(sim.goal).setY(0).normalize();sim.flee=sim.pos.clone().add(away.multiplyScalar(26)).add(new V3((Math.random()-.5)*8,0,0));}
+  }else if(sim.phase==="flee"){
+    if(walk(sim.flee,7.5)||sim.t>7){sim.phase="done";status(cur==="road"?"Deer turned back · beacons stay lit 15 s, then reset":"Deer left the yard · node back to monitoring");if(cur==="garden")log(logA,"Deer left the yard.");}
+  }else if(sim.phase==="eat"){
+    d.head.rotation.z=Math.sin(now/300)*.15-.9;
+    if(cur==="garden"&&sim.t>3&&!sim.logged){sim.logged=1;status("Deer reached the garden · turn light or sound back on and run it again",true);}
+  }
+  if(sim.phase!=="eat")d.head.rotation.z+=(0-d.head.rotation.z)*Math.min(1,dt*4);
+}
+
+/* ---------- loop ---------- */
+function resize(){const r=stage.getBoundingClientRect();renderer.setSize(r.width,r.height,false);camera.aspect=r.width/r.height;camera.updateProjectionMatrix();}
+new ResizeObserver(resize).observe(stage);resize();
+let visible=true;new IntersectionObserver(es=>{visible=es[0].isIntersecting;},{threshold:0}).observe(stage);
+let last=performance.now();
+function frame(now){
+  requestAnimationFrame(frame);const dt=Math.min(.05,(now-last)/1000);last=now;if(!visible)return;
+  const u=S().userData,h=hero();
+  if(tween){tween.k=Math.min(1,tween.k+dt/(RM?.01:1.1));const e=1-Math.pow(1-tween.k,3);camera.position.lerpVectors(tween.from,tween.p,e);controls.target.lerpVectors(tween.fromT,tween.t,e);if(tween.k>=1)tween=null;}
+  exT+=(exGoal-exT)*Math.min(1,dt*(RM?60:4));
+  for(const id in h.parts)h.parts[id].forEach(m=>{m.position.copy(m.userData.home).addScaledVector(m.userData.ex,exT*1.4);if(id==="harness")m.visible=exT<.05;});
+  stepSim(dt,now);
+  // deer gait
+  const d=u.deer, moving=sim&&(sim.phase==="approach"||sim.phase==="flee");
+  d.legs.forEach((l,i)=>{l.rotation.z=moving?Math.sin(d.phase+(i%2?Math.PI:0)+(i>1?Math.PI/2:0))*.55:l.rotation.z*.85;});
+  // nodes
+  u.nodes.forEach(n=>{
+    const act=n.fire&&now-n.fire<4500, useL=cur==="road"||opts.light, useS=cur==="road"||opts.sound;
+    const flash=act&&useL&&(Math.sin(now/38)+Math.sin(now/91)>.4);
+    n.leds.forEach((l,i)=>{l.material.emissive.setHex(flash&&((i+Math.floor(now/90))%2)?0xffffff:(act&&useL?0x333333:0x111111));});
+    n.light.intensity=flash?3.2:0;
+    n.rings.forEach((r,i)=>{if(act&&useS){const k=((now-n.fire)/900+i/3)%1;r.scale.setScalar(.05+k*2.6);r.material.opacity=(1-k)*.55;}else r.material.opacity=0;});
+    if(n===h){const base=(view==="xray"||view==="cutaway")?.08:0;n.cone.material.opacity=act?.07+.04*Math.sin(now/80):base+(base?.04*Math.sin(now/400):0);}
+  });
+  // signs + LoRa packets
+  u.signs.forEach(sg=>{const on=sg.on&&now-sg.on<15000;const a=on&&Math.floor(now/420)%2;sg.bm[0].material.emissive.setHex(on&&a?0xffa020:0x000000);sg.bm[1].material.emissive.setHex(on&&!a?0xffa020:0x000000);sg.L.intensity=on?2.2:0;});
+  if(u.halos)u.halos.forEach(h=>h.visible=view==="overview");
+  // car
+  if(u.car){u.car.visible=view==="overview"||!!sim;const c=u.car,beacon=u.signs.some(s=>s.on&&now-s.on<15000);const near=c.position.x>-50&&c.position.x<20;const v=beacon&&near?5:15;c.userData.v=(c.userData.v||15)+(v-(c.userData.v||15))*Math.min(1,dt*1.5);c.position.x+=c.userData.v*dt;if(c.position.x>90)c.position.x=-90;}
+  controls.update();renderer.render(S(),camera);
+}
+buildPartList();showPart(null);camTo(S().userData.camN,true);applyLook();requestAnimationFrame(frame);
+})();
+</script>
+</body>
+</html>
