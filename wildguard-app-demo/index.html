@@ -1,0 +1,1282 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#1d4a37">
+<title>WildGuard Garden App</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<meta name="description" content="WildGuard Garden Sensor companion app demo: pair nodes, set volume, lights and sounds. All nodes are simulated.">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect x='16' y='16' width='68' height='68' rx='9' transform='rotate(45 50 50)' fill='%23f2b705' stroke='%2317160f' stroke-width='4'/%3E%3C/svg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Overpass:wght@400;600;700;800;900&family=Overpass+Mono:wght@400;600&family=Public+Sans:wght@400;500;600;700&display=swap">
+<style>
+/* Layout: presenter panel (brand, live garden view, demo controls) beside a scaled phone that holds the app. Phone goes full screen on a real phone. */
+:root{
+  --bg:#e3e9e2; --app-bg:#f2f5f0; --card:#ffffff; --card-2:#e8eee7; --card-bd:rgba(19,32,26,.05);
+  --ink:#13201a; --muted:#56655d; --line:#d5ddd4;
+  --forest:#1d4a37; --forest-2:#24583f; --forest-ink:#f3f7f1;
+  --sign:#f2b705; --sign-ink:#17160f;
+  --good:#1f7a4d; --warn:#9a5c00; --alert:#b4401a;
+  --sel-bg:#1d4a37; --sel-ink:#f3f7f1; --btn-bg:#1d4a37; --btn-ink:#f3f7f1;
+  --fill:#1d4a37; --track:#d3dcd2; --knob:#ffffff; --sw-on:#1f7a4d; --sw-off:#c6d0c6;
+  --tab-bg:rgba(242,245,240,.94); --shadow:0 1px 2px rgba(19,32,26,.06),0 6px 18px rgba(19,32,26,.07); --focus:#1d4a37;
+  --map-lawn:#d3e5ca; --map-fence:#8aa48a; --map-house:#fbfcfa; --map-house-bd:#a7b7a8; --map-patio:#e7e1d2; --map-bed:#9b7752; --map-plant:#3d7f4f; --map-cov:#1f7a4d; --map-relay:#9a5c00; --map-label:#13201a;
+  --bar:#1d4a37; --bar-dim:#bfcdc0; --grid:#e0e7df;
+  --bezel:#0e1411; --bezel-edge:#3a4a42;
+  --led-off:#3b4842; --led-on:#fff6d6; --led-glow:#ffc23d; --bt:#3d9bff;
+  --sc-sky1:#08110e; --sc-sky2:#173229; --sc-moon:#efe8c8; --sc-star:#cfd9d2; --sc-trees:#0d1f18; --sc-fence:#2b3c34; --sc-ground:#17281e; --sc-ground2:#1f3528; --sc-bed:#3c2c20; --sc-leaf:#2f6b45; --sc-leaf2:#43915c; --sc-deer:#8a6542; --sc-cone:#ffd36b;
+  --na-body:#22302a; --na-body-bd:#4a5d54; --na-panel:#1c2f4f; --na-grid:#5a79a6; --na-lens:#e8eee9; --na-stake:#7b877f; --na-grill:#0c1310; --na-wave:#ffd36b;
+  --f-display:"Overpass","Arial Narrow",Arial,sans-serif;
+  --f-body:"Public Sans","Segoe UI",system-ui,sans-serif;
+  --f-mono:"Overpass Mono",ui-monospace,Menlo,monospace;
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --bg:#070d0b; --app-bg:#0d1512; --card:#151f1b; --card-2:#1e2b25; --card-bd:#22322a;
+  --ink:#e4ece6; --muted:#97a89f; --line:#26362f;
+  --forest:#173d2d; --forest-2:#1e4c38; --forest-ink:#e9f2ec;
+  --good:#4fbf8a; --warn:#f0a531; --alert:#e5764a;
+  --sel-bg:#f2b705; --sel-ink:#17160f; --btn-bg:#f2b705; --btn-ink:#17160f;
+  --fill:#f2b705; --track:#2c3d35; --knob:#f3f6f3; --sw-on:#3fae78; --sw-off:#34463d;
+  --tab-bg:rgba(13,21,18,.94); --shadow:none; --focus:#f2b705;
+  --map-lawn:#16271d; --map-fence:#40604b; --map-house:#22312a; --map-house-bd:#3e5247; --map-patio:#2b2b23; --map-bed:#4d3a27; --map-plant:#46955f; --map-cov:#4fbf8a; --map-relay:#f0a531; --map-label:#e4ece6;
+  --bar:#4fbf8a; --bar-dim:#2e443a; --grid:#22322b;
+  --bezel:#030605; --bezel-edge:#2b3a33; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#070d0b; --app-bg:#0d1512; --card:#151f1b; --card-2:#1e2b25; --card-bd:#22322a;
+  --ink:#e4ece6; --muted:#97a89f; --line:#26362f;
+  --forest:#173d2d; --forest-2:#1e4c38; --forest-ink:#e9f2ec;
+  --good:#4fbf8a; --warn:#f0a531; --alert:#e5764a;
+  --sel-bg:#f2b705; --sel-ink:#17160f; --btn-bg:#f2b705; --btn-ink:#17160f;
+  --fill:#f2b705; --track:#2c3d35; --knob:#f3f6f3; --sw-on:#3fae78; --sw-off:#34463d;
+  --tab-bg:rgba(13,21,18,.94); --shadow:none; --focus:#f2b705;
+  --map-lawn:#16271d; --map-fence:#40604b; --map-house:#22312a; --map-house-bd:#3e5247; --map-patio:#2b2b23; --map-bed:#4d3a27; --map-plant:#46955f; --map-cov:#4fbf8a; --map-relay:#f0a531; --map-label:#e4ece6;
+  --bar:#4fbf8a; --bar-dim:#2e443a; --grid:#22322b;
+  --bezel:#030605; --bezel-edge:#2b3a33; color-scheme:dark}
+
+*{box-sizing:border-box}
+html,body{height:100%}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--f-body);font-size:15px;line-height:1.45;-webkit-font-smoothing:antialiased;transition:background-color .3s}
+[hidden]{display:none!important}
+button,input,select{font:inherit;color:inherit}
+button{cursor:pointer;-webkit-tap-highlight-color:transparent}
+:focus-visible{outline:3px solid var(--focus);outline-offset:2px}
+.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+svg.ic{width:20px;height:20px;flex:none;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+svg.ic.fill{fill:currentColor;stroke:none}
+
+/* ---------- page / presenter ---------- */
+.page{--lw:clamp(360px,min(34vw,64vh),540px);--rw:clamp(240px,19vw,330px);--gap:clamp(28px,3.2vw,64px);
+  min-height:100%;display:grid;grid-template-columns:var(--lw) auto var(--rw);grid-template-areas:"left phone right";justify-content:center;align-content:center;align-items:center;column-gap:var(--gap);row-gap:28px;
+  padding-block:24px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+.presenter{display:grid;gap:1.05em;align-content:start;min-width:0;font-size:clamp(13px,1.75vh,17px)}
+.left{grid-area:left}
+.right{grid-area:right}
+.phone-col{grid-area:phone}
+.howlist{list-style:none;margin:0;padding:0;display:grid}
+.howlist li{display:grid;grid-template-columns:2.6em minmax(0,1fr);gap:.8em;position:relative;padding-bottom:1.1em}
+.howlist li:last-child{padding-bottom:0}
+.howlist li:not(:last-child)::before{content:"";position:absolute;left:1.3em;top:2.6em;bottom:.15em;border-left:2px dotted var(--line);transform:translateX(-1px)}
+.howlist .hi{width:2.6em;height:2.6em;border-radius:50%;display:grid;place-items:center;background:var(--forest);color:var(--sign)}
+.howlist .hi svg.ic{width:1.3em;height:1.3em}
+.howlist b{display:block;font-family:var(--f-display);font-weight:800;font-size:1.08em;line-height:1.2;padding-top:.15em}
+.howlist span{display:block;color:var(--muted);font-size:.93em;line-height:1.4;margin-top:.15em}
+.demoset{background:var(--card);border:1px solid var(--card-bd);border-radius:16px;box-shadow:var(--shadow);padding:1em;display:grid;gap:.8em}
+.demoset h2{margin:0}
+.demoset .btn{width:100%}
+.demoset .seg.mini{min-width:0}
+.brandband{background:var(--forest);color:var(--forest-ink);border-radius:14px;padding:1em 1.2em 1.25em;position:relative;overflow:hidden}
+.brandband::after{content:"";position:absolute;left:0;right:0;bottom:0;height:7px;background:repeating-linear-gradient(90deg,var(--sign) 0 44px,transparent 44px 72px)}
+.brand{display:flex;align-items:center;gap:.8em}
+.brand .logo{width:3em;height:3em;flex:none}
+.brand b{display:block;font-family:var(--f-display);font-weight:900;font-size:1.75em;line-height:1;letter-spacing:.01em}
+.brand span{display:block;font-family:var(--f-display);font-weight:800;color:var(--sign);font-size:1.02em;margin-top:.3em}
+.lg-d{fill:var(--sign);stroke:var(--sign-ink)}
+.lg-deer{fill:var(--sign-ink)}
+.intro{display:grid;gap:.45em}
+.eyebrow{font-family:var(--f-mono);font-size:.78em;letter-spacing:.13em;text-transform:uppercase;color:var(--muted);margin:0}
+.intro h1{font-family:var(--f-display);font-weight:900;font-size:2.5em;line-height:1;letter-spacing:-.015em;margin:0;text-wrap:balance}
+.lede{margin:0;color:var(--muted);font-size:1.03em;max-width:46ch}
+.scenecard{background:var(--card);border:1px solid var(--card-bd);border-radius:16px;box-shadow:var(--shadow);overflow:hidden}
+.scenehead{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:.7em .95em;font-size:.95em}
+.scenehead b{font-family:var(--f-display);font-weight:800}
+.pill{display:inline-flex;align-items:center;gap:6px;font-family:var(--f-mono);font-size:.76em;letter-spacing:.06em;text-transform:uppercase;padding:4px 10px;border-radius:999px;background:var(--card-2);white-space:nowrap}
+.pill i{width:8px;height:8px;border-radius:50%;background:var(--good)}
+.pill.warn i{background:var(--sign);box-shadow:0 0 0 3px rgba(242,183,5,.3);animation:blink .7s steps(1,end) infinite}
+.pill.mute i{background:var(--muted)}
+@keyframes blink{50%{opacity:.25}}
+#scene{display:block;width:100%;height:auto;background:var(--sc-sky1)}
+.scenestatus{margin:0;padding:.65em .95em 0;color:var(--muted);font-size:.92em;min-height:2.6em}
+.simrow{display:flex;gap:8px;padding:.6em .95em .95em;flex-wrap:wrap}
+.simrow select{flex:1 1 150px;min-width:0;border:1px solid var(--line);background:var(--app-bg);border-radius:10px;padding:.55em .7em;font-weight:600}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;border:0;border-radius:12px;background:var(--btn-bg);color:var(--btn-ink);font-family:var(--f-display);font-weight:800;font-size:1em;padding:.6em 1.05em;letter-spacing:.01em;transition:transform .12s,opacity .2s}
+.btn:active{transform:scale(.97)}
+.btn:disabled{opacity:.45;cursor:default}
+.btn svg.ic{width:1.25em;height:1.25em}
+.btn .deer-ic{width:1.5em;height:1.5em;fill:currentColor}
+.prefs{display:flex;align-items:center;justify-content:space-between;gap:10px 16px;flex-wrap:wrap}
+.pref{display:flex;align-items:center;gap:10px;font-weight:600;font-size:.95em;cursor:pointer}
+.how{display:grid;gap:.9em}
+.how h2,.demoset h2{font-family:var(--f-display);font-weight:800;font-size:.85em;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);margin:0}
+.foot{margin:0;font-size:.85em;color:var(--muted)}
+@media (max-height:600px) and (min-width:1000px){.lede{display:none}}
+@media (max-width:1149px){
+  .page{grid-template-columns:var(--lw) auto;grid-template-areas:"left phone" "right phone";align-items:start}
+  .phone-col{position:sticky;top:24px;align-self:start}
+}
+@media (max-width:999px){
+  .page{grid-template-columns:minmax(0,640px);grid-template-areas:"phone" "left" "right";align-content:start}
+  .phone-col{position:static}
+  .presenter{font-size:15px}
+}
+
+/* ---------- phone frame ---------- */
+.phone-col{display:flex;justify-content:center;min-width:0}
+.phone-slot{position:relative;flex:none;width:calc(414px * var(--s,1));height:calc(868px * var(--s,1))}
+.phone{position:absolute;left:0;top:0;width:414px;height:868px;transform:scale(var(--s,1));transform-origin:0 0;border-radius:66px;padding:12px;background:var(--bezel);box-shadow:0 0 0 2px var(--bezel-edge),0 0 0 7px var(--bezel),0 40px 90px rgba(0,0,0,.35)}
+.screen{position:relative;width:100%;height:100%;border-radius:54px;overflow:hidden;background:var(--app-bg);color:var(--ink);display:flex;flex-direction:column;isolation:isolate;transition:background-color .3s}
+.island{position:absolute;top:11px;left:50%;width:124px;height:35px;margin-left:-62px;border-radius:20px;background:#000;z-index:40}
+.statusbar{height:54px;flex:none;display:flex;align-items:center;justify-content:space-between;padding:8px 30px 0 44px;font-weight:700;font-size:16px;font-variant-numeric:tabular-nums;position:relative;z-index:6}
+.statusbar .sbr{display:flex;align-items:center;gap:6px}
+.statusbar svg{height:13px;width:auto;fill:currentColor}
+.views{position:relative;flex:1;min-height:0}
+.view,.push{position:absolute;inset:0;overflow-y:auto;overscroll-behavior:contain;padding:2px 18px 32px;scrollbar-width:none}
+.view::-webkit-scrollbar,.push::-webkit-scrollbar{display:none}
+.push{background:var(--app-bg);transform:translateX(102%);transition:transform .34s cubic-bezier(.2,.8,.2,1),visibility 0s .34s;visibility:hidden;z-index:5}
+.push.in{transform:none;visibility:visible;transition:transform .34s cubic-bezier(.2,.8,.2,1)}
+.tabbar{flex:none;display:grid;grid-template-columns:repeat(4,1fr);padding:7px 10px 28px;border-top:1px solid var(--line);background:var(--tab-bg);position:relative;z-index:6}
+.tabbar button{background:none;border:0;display:grid;justify-items:center;gap:3px;font-size:11.5px;font-weight:600;color:var(--muted);padding:4px 0}
+.tabbar button svg{width:25px;height:25px}
+.tabbar button[aria-current="page"]{color:var(--ink)}
+.tabbar button[aria-current="page"] svg{color:var(--good)}
+
+/* mobile: the app is the whole screen */
+.m .page{padding:0;gap:0;grid-template-columns:100%}
+.m .phone-col{width:100%}
+.m .right{padding-top:0!important}
+.m .phone-slot{width:100%;height:100svh}
+.m .phone{position:relative;width:100%;height:100%;transform:none;border-radius:0;padding:0;box-shadow:none;background:transparent}
+.m .screen{border-radius:0}
+.m .island,.m .statusbar{display:none}
+.m .view,.m .push{padding-top:12px}
+.m .tabbar{padding-bottom:max(10px,env(safe-area-inset-bottom,0px))}
+.m .presenter{padding:28px max(16px,env(safe-area-inset-left,0px)) 40px max(16px,env(safe-area-inset-right,0px));width:100%;font-size:15px}
+
+/* ---------- app type + parts ---------- */
+.ahead{display:flex;align-items:center;justify-content:space-between;gap:10px;min-height:44px;padding-top:4px}
+.abrand{display:flex;align-items:center;gap:8px;font-family:var(--f-display);font-weight:900;font-size:17px;letter-spacing:.01em}
+.abrand svg{width:28px;height:28px}
+.iconbtn{width:40px;height:40px;border-radius:50%;border:0;background:var(--card);color:var(--ink);display:grid;place-items:center;box-shadow:var(--shadow);border:1px solid var(--card-bd)}
+.ttl{font-family:var(--f-display);font-weight:900;font-size:34px;line-height:1.05;letter-spacing:-.015em;margin:8px 0 2px}
+.ttl.sm{font-size:27px;margin:2px 0 4px}
+.sub{margin:0 0 14px;color:var(--muted);font-size:14.5px}
+.sh{display:flex;align-items:baseline;justify-content:space-between;gap:10px;margin:22px 2px 8px;font-family:var(--f-display);font-weight:800;font-size:13px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
+.lnk{background:none;border:0;padding:0;color:var(--good);font-weight:700;font-size:14.5px;text-transform:none;letter-spacing:0;font-family:var(--f-body)}
+.card{background:var(--card);border:1px solid var(--card-bd);border-radius:20px;box-shadow:var(--shadow)}
+.group > .row + .row,.list > .lrow + .lrow{border-top:1px solid var(--line)}
+.row{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:13px 16px}
+.row.col{display:grid;justify-content:stretch;gap:10px}
+.row.disabled{opacity:.4;pointer-events:none}
+.rl{display:flex;align-items:center;gap:12px;min-width:0}
+.rl > svg.ic{color:var(--muted);width:22px;height:22px}
+.rl b{display:block;font-weight:700;font-size:15.5px}
+.rl span{display:block;color:var(--muted);font-size:13px;line-height:1.35}
+.lab{font-weight:700;font-size:15px}
+.hint{color:var(--muted);font-size:13px;margin:0}
+.vhead{display:flex;justify-content:space-between;align-items:baseline;font-weight:700;font-size:15px}
+.vhead b{font-family:var(--f-mono);font-weight:600;font-size:14px;color:var(--muted);font-variant-numeric:tabular-nums}
+
+/* switch */
+.sw{position:relative;display:inline-block;width:51px;height:31px;flex:none}
+.sw input{position:absolute;inset:0;opacity:0;margin:0;cursor:pointer;z-index:1}
+.sw span{position:absolute;inset:0;border-radius:16px;background:var(--sw-off);transition:background .2s}
+.sw span::after{content:"";position:absolute;left:2px;top:2px;width:27px;height:27px;border-radius:50%;background:#fff;box-shadow:0 2px 5px rgba(0,0,0,.25);transition:transform .22s cubic-bezier(.3,.7,.4,1)}
+.sw input:checked + span{background:var(--sw-on)}
+.sw input:checked + span::after{transform:translateX(20px)}
+.sw input:focus-visible + span{outline:3px solid var(--focus);outline-offset:2px}
+
+/* segmented + chips */
+.seg{display:grid;grid-auto-flow:column;grid-auto-columns:1fr;background:var(--card-2);border-radius:12px;padding:3px;gap:2px}
+.seg button{border:0;background:transparent;border-radius:9px;padding:8px 6px;font-weight:700;font-size:14px;color:var(--muted);display:flex;align-items:center;justify-content:center;gap:6px;white-space:nowrap}
+.seg button svg.ic{width:17px;height:17px}
+.seg button.on{background:var(--card);color:var(--ink);box-shadow:0 1px 3px rgba(0,0,0,.14)}
+.seg.mini{font-size:.9em;min-width:15em}
+.seg.mini button{font-size:.95em;padding:.45em .5em}
+.chips{display:flex;flex-wrap:wrap;gap:8px}
+.chip{border:1.5px solid var(--line);background:transparent;border-radius:999px;padding:7px 14px;font-weight:700;font-size:14px;color:var(--ink)}
+.chip.on{background:var(--sel-bg);border-color:var(--sel-bg);color:var(--sel-ink)}
+
+/* range */
+.rng{-webkit-appearance:none;appearance:none;width:100%;height:30px;background:transparent;margin:0;--pct:50%}
+.rng::-webkit-slider-runnable-track{height:6px;border-radius:3px;background:linear-gradient(90deg,var(--fill) var(--pct),var(--track) var(--pct))}
+.rng::-webkit-slider-thumb{-webkit-appearance:none;width:28px;height:28px;border-radius:50%;background:var(--knob);margin-top:-11px;box-shadow:0 1px 5px rgba(0,0,0,.3),0 0 0 1px rgba(0,0,0,.06)}
+.rng::-moz-range-track{height:6px;border-radius:3px;background:var(--track)}
+.rng::-moz-range-progress{height:6px;border-radius:3px;background:var(--fill)}
+.rng::-moz-range-thumb{width:28px;height:28px;border:0;border-radius:50%;background:var(--knob);box-shadow:0 1px 5px rgba(0,0,0,.3)}
+.vol{display:flex;align-items:center;gap:12px}
+.round{width:40px;height:40px;flex:none;border-radius:50%;border:1.5px solid var(--line);background:var(--card);color:var(--ink);display:grid;place-items:center}
+.round:active{transform:scale(.94)}
+
+/* home */
+.hero{margin-top:6px;border-radius:22px;padding:18px 18px 22px;background:linear-gradient(140deg,var(--forest) 0%,var(--forest-2) 100%);color:var(--forest-ink);position:relative;overflow:hidden;transition:background .3s}
+.hero::after{content:"";position:absolute;left:0;right:0;bottom:0;height:6px;background:repeating-linear-gradient(90deg,var(--sign) 0 34px,transparent 34px 56px)}
+.hero.paused{background:var(--card-2);color:var(--ink)}
+.hero.paused::after{background:repeating-linear-gradient(90deg,var(--muted) 0 34px,transparent 34px 56px);opacity:.5}
+.hero-top{display:flex;align-items:center;gap:12px}
+.hero-ic{width:46px;height:46px;border-radius:14px;display:grid;place-items:center;background:var(--sign);color:var(--sign-ink);flex:none}
+.hero.paused .hero-ic{background:var(--muted);color:var(--card)}
+.hero-ic svg.ic{width:26px;height:26px}
+.hero-top > div b{display:block;font-family:var(--f-display);font-weight:900;font-size:22px;line-height:1.1}
+.hero-top > div span{display:block;font-size:14px;opacity:.85}
+.hero-top > div{flex:1;min-width:0}
+.hero-stats{display:flex;align-items:flex-end;gap:28px;margin-top:16px}
+.hero-stats div b{display:block;font-family:var(--f-display);font-weight:900;font-size:30px;line-height:1;font-variant-numeric:tabular-nums}
+.hero-stats div span{font-size:13px;opacity:.85;white-space:nowrap}
+.hero-btn{flex:none;margin-left:auto;align-self:flex-end;border:0;border-radius:999px;padding:8px 13px;font-weight:700;font-size:13.5px;background:rgba(255,255,255,.14);color:inherit;display:flex;align-items:center;gap:5px;white-space:nowrap}
+.hero-btn svg.ic{width:16px;height:16px}
+.hero.paused .hero-btn{background:var(--btn-bg);color:var(--btn-ink)}
+.mapcard{padding:8px;overflow:hidden}
+.yard{display:block;width:100%;height:auto}
+.y-lawn{fill:var(--map-lawn)}
+.y-fence{fill:none;stroke:var(--map-fence);stroke-width:2;stroke-dasharray:5 4}
+.y-house{fill:var(--map-house);stroke:var(--map-house-bd);stroke-width:1.5}
+.y-patio{fill:var(--map-patio)}
+.y-bed{fill:var(--map-bed)}
+.y-plant{fill:var(--map-plant)}
+.y-txt{font-family:var(--f-display);font-weight:800;font-size:11px;fill:var(--muted);letter-spacing:.06em}
+.y-wifi{fill:none;stroke:var(--muted);stroke-width:1.6;stroke-linecap:round}
+.y-cov{fill:var(--map-cov);fill-opacity:.12;stroke:var(--map-cov);stroke-opacity:.55;stroke-width:1.2;transition:r .3s}
+.y-cov.off{fill-opacity:.03;stroke-dasharray:3 3;stroke-opacity:.35}
+.y-relay{fill:none;stroke:var(--map-relay);stroke-width:1.8;stroke-dasharray:2 4;stroke-linecap:round}
+.pin{cursor:pointer}
+.pin .p-bg{fill:var(--card);stroke:var(--ink);stroke-width:1.5}
+.pin .p-d{fill:var(--sign);stroke:var(--sign-ink);stroke-width:1.2}
+.pin.off .p-d{fill:var(--card-2);stroke:var(--muted)}
+.pin .p-lbl{font-family:var(--f-display);font-weight:800;font-size:11px;fill:var(--map-label);paint-order:stroke;stroke:var(--map-lawn);stroke-width:3.5px;stroke-linejoin:round}
+.pin .p-ring{fill:none;stroke:var(--sign);stroke-width:3;opacity:0;transform-box:fill-box;transform-origin:center}
+.pin.hit .p-ring{animation:ring 1s ease-out 3}
+.pin.hit.miss .p-ring{stroke:var(--muted)}
+@keyframes ring{0%{opacity:.95;transform:scale(1)}100%{opacity:0;transform:scale(3.6)}}
+.pin .p-deer{opacity:0;fill:var(--map-label)}
+.pin.hit .p-deer{animation:mapdeer 2.6s ease-in forwards}
+.pin.hit.miss .p-deer{animation:mapgraze 3s ease-in-out forwards}
+@keyframes mapdeer{0%{opacity:0;translate:0 0}15%{opacity:1;translate:0 0}40%{opacity:1;translate:0 0}100%{opacity:0;translate:46px -22px}}
+@keyframes mapgraze{0%{opacity:0}15%,85%{opacity:1}100%{opacity:0}}
+.legend{display:flex;gap:12px;font-family:var(--f-body);font-weight:600;font-size:12px;text-transform:none;letter-spacing:0}
+.legend i{display:inline-block;width:14px;height:0;border-top:2px dashed var(--map-relay);vertical-align:middle;margin-right:5px}
+.legend i.cov{width:10px;height:10px;border:1.5px solid var(--map-cov);border-radius:50%;background:transparent}
+.nodes{display:grid;gap:10px}
+.ncard{background:var(--card);border:1px solid var(--card-bd);border-radius:20px;box-shadow:var(--shadow);padding:14px 14px 12px 14px;display:grid;grid-template-columns:minmax(0,1fr) auto;gap:10px 12px;align-items:center;cursor:pointer;transition:transform .15s}
+.ncard:active{transform:scale(.985)}
+.ncard.flashing{animation:cardflash .5s ease-in-out 4}
+@keyframes cardflash{50%{box-shadow:0 0 0 3px var(--sign)}}
+.ncard.new{animation:cardnew 1.6s ease-out}
+@keyframes cardnew{0%{box-shadow:0 0 0 4px var(--sign)}100%{box-shadow:var(--shadow)}}
+.nmain{display:flex;align-items:center;gap:12px;border:0;background:none;padding:0;text-align:left;min-width:0}
+.npin{width:40px;height:40px;flex:none;display:grid;place-items:center;border-radius:12px;background:var(--card-2)}
+.npin svg{width:26px;height:26px}
+.ncard.off .npin .lg-d{fill:var(--card);stroke:var(--muted)}
+.ntext{min-width:0}
+.ntext b{display:block;font-family:var(--f-display);font-weight:800;font-size:17.5px;line-height:1.15;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.ntext span{display:block;color:var(--muted);font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.nmeta{grid-column:1 / -1;display:flex;gap:8px;flex-wrap:wrap}
+.nmeta span{display:inline-flex;align-items:center;gap:5px;font-size:13px;font-weight:600;background:var(--card-2);border-radius:999px;padding:4px 10px 4px 8px;font-variant-numeric:tabular-nums}
+.nmeta span svg.ic{width:16px;height:16px}
+.nmeta span.dim{color:var(--muted);text-decoration:line-through;text-decoration-thickness:1.5px}
+.nmeta span.low{color:var(--alert)}
+.addcard{border:2px dashed var(--line);background:transparent;border-radius:20px;padding:14px;font-weight:700;color:var(--muted);display:flex;align-items:center;justify-content:center;gap:8px;font-size:15px}
+.lrow{display:flex;align-items:flex-start;gap:12px;padding:12px 16px}
+.lrow .li{width:34px;height:34px;flex:none;border-radius:50%;display:grid;place-items:center;background:var(--card-2);color:var(--ink);margin-top:1px}
+.lrow .li.deter{background:var(--sign);color:var(--sign-ink)}
+.lrow .li svg{width:19px;height:19px}
+.lrow .li .deer-ic{width:22px;height:22px;fill:currentColor}
+.lrow .lt{flex:1;min-width:0}
+.lrow .lt b{display:block;font-weight:700;font-size:14.5px}
+.lrow .lt span{display:block;color:var(--muted);font-size:13px;line-height:1.35}
+.lrow time{font-family:var(--f-mono);font-size:12px;color:var(--muted);white-space:nowrap;padding-top:2px}
+button.lrow{width:100%;border:0;background:none;text-align:left;align-items:center}
+button.lrow .lt b{font-size:15.5px}
+.kv .lrow{align-items:center}
+.kv .lrow .lt{font-weight:600;font-size:14.5px}
+.kv .lrow .v{color:var(--muted);font-size:14px;text-align:right}
+.okdot{display:inline-block;width:8px;height:8px;border-radius:50%;background:var(--good);margin-right:6px}
+
+/* node detail */
+.back{border:0;background:none;padding:6px 4px 6px 0;display:flex;align-items:center;gap:2px;font-weight:700;font-size:16px;color:var(--good)}
+.back svg.ic{width:22px;height:22px}
+.nhero{display:grid;grid-template-columns:104px minmax(0,1fr);gap:14px;align-items:center;margin-top:4px}
+.nart{width:104px;height:150px;border-radius:20px;background:radial-gradient(circle at 50% 40%,var(--sc-sky2),var(--sc-sky1));display:grid;place-items:center;overflow:hidden}
+.nart svg{width:96px;height:140px}
+.armrow{display:flex;align-items:center;gap:10px;justify-content:space-between;font-weight:600;font-size:14px}
+.armrow .st{display:flex;align-items:center;gap:7px}
+.dot{width:9px;height:9px;border-radius:50%;background:var(--muted);flex:none}
+.dot.ok{background:var(--good)}
+.stats4{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;margin-top:16px}
+.stat{background:var(--card);border:1px solid var(--card-bd);border-radius:18px;box-shadow:var(--shadow);padding:12px 14px;min-width:0}
+.stat .k{display:flex;align-items:center;gap:6px;color:var(--muted);font-size:12.5px;font-weight:700;text-transform:uppercase;letter-spacing:.05em}
+.stat .k svg.ic{width:16px;height:16px}
+.stat b{display:block;font-family:var(--f-display);font-weight:900;font-size:24px;line-height:1.1;margin-top:4px;font-variant-numeric:tabular-nums}
+.stat .s{display:block;font-size:12.5px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.spark{display:block;width:100%;height:26px;margin-top:4px}
+.spark .a{fill:var(--good);fill-opacity:.16}
+.spark .l{fill:none;stroke:var(--good);stroke-width:1.8}
+.spark .e{fill:var(--good)}
+.btn.big{width:100%;margin-top:14px;padding:15px;font-size:17px;border-radius:16px}
+
+/* sounds */
+.srow{display:flex;align-items:center;gap:12px;padding:11px 16px}
+.srow + .srow{border-top:1px solid var(--line)}
+.play{width:38px;height:38px;flex:none;border-radius:50%;border:0;background:var(--card-2);color:var(--ink);display:grid;place-items:center}
+.play svg.ic{width:15px;height:15px;margin-left:2px}
+.play .eq{display:none;gap:2px;align-items:flex-end;height:15px}
+.play .eq i{width:3px;background:currentColor;border-radius:1px;animation:eq .5s ease-in-out infinite alternate}
+.play .eq i:nth-child(2){animation-delay:-.2s}.play .eq i:nth-child(3){animation-delay:-.35s}
+@keyframes eq{0%{height:3px}100%{height:15px}}
+.play.playing{background:var(--sel-bg);color:var(--sel-ink)}
+.play.playing svg{display:none}
+.play.playing .eq{display:flex}
+.sinfo{flex:1;min-width:0}
+.sinfo b{display:block;font-weight:700;font-size:15.5px}
+.sinfo span{display:block;font-size:12.5px;color:var(--muted)}
+.srow.offrow .sinfo b{color:var(--muted)}
+
+/* activity */
+.kpis{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;padding:14px 16px 4px}
+.kpis b{display:block;font-family:var(--f-display);font-weight:900;font-size:28px;line-height:1;font-variant-numeric:tabular-nums}
+.kpis span{font-size:12.5px;color:var(--muted);line-height:1.25;display:block;margin-top:3px}
+.chart{display:block;width:100%;height:auto;padding:0 8px 8px}
+.chart .gl{stroke:var(--grid);stroke-width:1}
+.chart .bar{fill:var(--bar-dim)}
+.chart .bar.today{fill:var(--bar)}
+.chart text{font-family:var(--f-mono);font-size:10.5px;fill:var(--muted)}
+.chart text.v{fill:var(--ink);font-weight:600}
+.chart text.today{fill:var(--ink);font-weight:600}
+.insight{display:flex;gap:12px;align-items:flex-start;padding:13px 16px;margin-top:10px;font-size:14px}
+.insight svg.ic{color:var(--good);margin-top:1px}
+
+/* overlays */
+.banner{position:absolute;left:10px;right:10px;top:10px;z-index:50;display:flex;gap:11px;align-items:flex-start;text-align:left;border:0;padding:12px 14px;border-radius:24px;background:var(--card);color:var(--ink);box-shadow:0 12px 34px rgba(0,0,0,.28),0 0 0 1px var(--card-bd);transform:translateY(calc(-100% - 70px));transition:transform .45s cubic-bezier(.2,.9,.25,1.1)}
+.banner.show{transform:none}
+.bn-ic{width:38px;height:38px;flex:none;border-radius:10px;background:var(--forest);display:grid;place-items:center}
+.bn-ic svg{width:28px;height:28px}
+.bn-t{min-width:0;flex:1}
+.bn-t > b{display:block;font-size:15px;margin-top:1px}
+.bn-t > span{display:block;font-size:13.5px;color:var(--muted);line-height:1.35}
+.bn-t > span.bn-h{display:flex;justify-content:space-between;font-size:12px;font-weight:600;text-transform:uppercase;letter-spacing:.04em}
+.m .banner{top:max(10px,env(safe-area-inset-top,0px))}
+.toast{position:absolute;left:50%;bottom:104px;z-index:45;transform:translate(-50%,20px);opacity:0;pointer-events:none;background:var(--ink);color:var(--app-bg);font-weight:700;font-size:14px;padding:10px 16px;border-radius:999px;white-space:nowrap;transition:opacity .25s,transform .25s;display:flex;gap:8px;align-items:center}
+.toast.show{opacity:1;transform:translate(-50%,0)}
+.toast svg.ic{width:18px;height:18px}
+.scrim{position:absolute;inset:0;z-index:30;background:rgba(0,0,0,.4);opacity:0;transition:opacity .3s}
+.scrim.in{opacity:1}
+.sheet{position:absolute;left:0;right:0;bottom:0;z-index:35;max-height:88%;overflow-y:auto;background:var(--app-bg);border-radius:28px 28px 0 0;padding:8px 20px 34px;transform:translateY(105%);transition:transform .38s cubic-bezier(.2,.85,.25,1);box-shadow:0 -10px 40px rgba(0,0,0,.25)}
+.sheet.in{transform:none}
+.grab{width:40px;height:5px;border-radius:3px;background:var(--line);margin:0 auto 10px}
+.shead{display:flex;justify-content:space-between;align-items:center;gap:10px}
+.shead .stp{font-family:var(--f-mono);font-size:12px;letter-spacing:.1em;text-transform:uppercase;color:var(--muted)}
+.sheet h2{font-family:var(--f-display);font-weight:900;font-size:26px;line-height:1.1;margin:8px 0 6px}
+.sheet p{margin:0 0 12px;color:var(--muted);font-size:15px}
+.sheet .btn{width:100%;padding:14px;font-size:16.5px;border-radius:16px;margin-top:8px}
+.btn.ghost{background:transparent;color:var(--ink);border:1.5px solid var(--line)}
+.xbtn{width:34px;height:34px;border-radius:50%;border:0;background:var(--card-2);color:var(--muted);display:grid;place-items:center}
+.xbtn svg.ic{width:18px;height:18px}
+.pairart{height:170px;border-radius:20px;background:radial-gradient(circle at 50% 45%,var(--sc-sky2),var(--sc-sky1));display:grid;place-items:center;margin:8px 0 14px;position:relative;overflow:hidden}
+.pairart svg.na{width:100px;height:146px}
+.radar{position:relative;width:150px;height:150px;display:grid;place-items:center}
+.radar i{position:absolute;inset:0;border-radius:50%;border:2px solid var(--bt);opacity:0;animation:radar 2.2s ease-out infinite}
+.radar i:nth-child(2){animation-delay:.7s}.radar i:nth-child(3){animation-delay:1.4s}
+@keyframes radar{0%{transform:scale(.25);opacity:.9}100%{transform:scale(1);opacity:0}}
+.radar .bt{width:56px;height:56px;border-radius:50%;background:var(--bt);color:#fff;display:grid;place-items:center;position:relative;z-index:1}
+.radar .bt svg.ic{width:28px;height:28px}
+.found{display:flex;align-items:center;gap:12px;padding:12px 14px;margin-bottom:4px;animation:pop .35s ease-out}
+@keyframes pop{0%{transform:scale(.92);opacity:0}100%{transform:none;opacity:1}}
+.found .npin{background:var(--card-2)}
+.found .lt{flex:1;min-width:0}
+.found .lt b{display:block;font-weight:700}
+.found .lt span{display:block;font-size:13px;color:var(--muted)}
+.found .btn{width:auto;margin:0;padding:9px 16px;font-size:15px;border-radius:999px}
+.net{display:flex;align-items:center;gap:12px;padding:13px 16px;width:100%;border:0;background:none;text-align:left}
+.net + .net{border-top:1px solid var(--line)}
+.net .lt{flex:1}
+.net .lt b{display:block;font-weight:700;font-size:15px}
+.net .lt span{display:block;font-size:12.5px;color:var(--muted)}
+.net.dis{opacity:.5;cursor:not-allowed}
+.net .chk{color:var(--good)}
+.field{display:grid;gap:6px;margin:14px 0 4px}
+.field label{font-weight:700;font-size:14px}
+.field input{width:100%;border:1.5px solid var(--line);background:var(--card);border-radius:14px;padding:12px 14px;font-size:16px}
+.field input:focus{outline:none;border-color:var(--good)}
+.steps{display:grid;gap:12px;margin:6px 0 10px;padding:0;list-style:none}
+.steps li{display:flex;align-items:center;gap:12px;font-weight:600;font-size:15px;color:var(--muted);transition:color .2s}
+.steps li .sc{width:28px;height:28px;border-radius:50%;border:2px solid var(--line);display:grid;place-items:center;flex:none}
+.steps li.done{color:var(--ink)}
+.steps li.done .sc{background:var(--good);border-color:var(--good);color:#fff}
+.steps li.now .sc{border-color:var(--good);border-top-color:transparent;animation:spin .8s linear infinite}
+.steps li .sc svg.ic{width:16px;height:16px;stroke-width:3}
+@keyframes spin{to{transform:rotate(360deg)}}
+.donebig{width:84px;height:84px;border-radius:50%;background:var(--good);color:#fff;display:grid;place-items:center;margin:16px auto 8px;animation:pop .4s ease-out}
+.donebig svg.ic{width:44px;height:44px;stroke-width:3}
+.center{text-align:center}
+.splash{position:absolute;inset:0;z-index:60;background:var(--forest);color:var(--forest-ink);display:grid;place-content:center;justify-items:center;gap:6px;text-align:center;transition:opacity .5s,visibility 0s .5s}
+.splash.gone{opacity:0;visibility:hidden}
+.splash svg{width:96px;height:96px;margin-bottom:10px}
+.splash b{font-family:var(--f-display);font-weight:900;font-size:36px;line-height:1}
+.splash span{font-family:var(--f-display);font-weight:800;color:var(--sign);font-size:16px}
+
+/* ---------- the node itself (scene + app) ---------- */
+.na-stake{fill:var(--na-stake)}
+.na-panel{fill:var(--na-panel);stroke:var(--na-body-bd);stroke-width:1.5}
+.na-grid{fill:none;stroke:var(--na-grid);stroke-width:1}
+.na-body{fill:var(--na-body);stroke:var(--na-body-bd);stroke-width:2}
+.na-lens{fill:var(--na-lens);opacity:.92}
+.na-lensf{fill:none;stroke:var(--na-body);stroke-width:1;opacity:.35}
+.na-grill{fill:var(--na-grill)}
+.na-mark{fill:var(--sign)}
+.led{fill:var(--led-off);transition:fill .1s}
+.waves path{fill:none;stroke:var(--na-wave);stroke-width:3;stroke-linecap:round;opacity:0}
+.flash .led{fill:var(--led-on);filter:drop-shadow(0 0 calc(var(--b,1)*5px) var(--led-glow)) drop-shadow(0 0 calc(var(--b,1)*12px) var(--led-glow))}
+.flash.p-strobe .led{animation:strobe .34s steps(1,end) infinite}
+.flash.p-pulse .led{animation:pulse 1s ease-in-out infinite}
+.flash.p-chase .l1{animation:strobe .68s steps(1,end) infinite}
+.flash.p-chase .l2{animation:strobe .68s steps(1,end) infinite;animation-delay:-.34s}
+@keyframes strobe{0%{opacity:1}50%{opacity:.12}}
+@keyframes pulse{0%,100%{opacity:.2}50%{opacity:1}}
+.pairing .led{fill:var(--bt);filter:drop-shadow(0 0 6px var(--bt));animation:pulse 1.1s ease-in-out infinite}
+.sounding .waves path{animation:wave .7s ease-out infinite}
+.sounding .waves path:nth-child(2),.sounding .waves path:nth-child(4){animation-delay:.18s}
+@keyframes wave{0%{opacity:0}30%{opacity:1}100%{opacity:0}}
+.halo{opacity:0;transition:opacity .2s}
+.flash .halo{opacity:calc(var(--b,1) * .9)}
+.flash.p-strobe .halo{animation:strobe .34s steps(1,end) infinite}
+.flash.p-pulse .halo{animation:pulse 1s ease-in-out infinite}
+.flash.p-chase .halo{animation:pulse .68s ease-in-out infinite}
+.cone{opacity:.25;transition:opacity .25s}
+.detecting .cone{opacity:1}
+.sc-moon{fill:var(--sc-moon)}
+.sc-star{fill:var(--sc-star)}
+.sc-trees{fill:var(--sc-trees)}
+.sc-fence{fill:var(--sc-fence)}
+.sc-ground{fill:var(--sc-ground)}
+.sc-ground2{fill:var(--sc-ground2)}
+.sc-bed{fill:var(--sc-bed)}
+.sc-leaf{fill:var(--sc-leaf)}
+.sc-leaf2{fill:var(--sc-leaf2)}
+#deerFlip{transform-box:fill-box;transform-origin:center}
+#deerBob{fill:var(--sc-deer)}
+#deerBob .antler{fill:none;stroke:var(--sc-deer);stroke-width:2.6;stroke-linecap:round;stroke-linejoin:round}
+#deerBob.walk{animation:bob .42s ease-in-out infinite}
+#deerBob.run{animation:bob .22s ease-in-out infinite}
+#deerBob.graze{animation:graze 1.4s ease-in-out infinite}
+@keyframes bob{50%{transform:translateY(-3px)}}
+@keyframes graze{50%{transform:translateY(3px) rotate(-3deg)}}
+
+@media (prefers-reduced-motion:reduce){
+  *,*::before,*::after{transition-duration:.01ms!important;animation-duration:.01ms!important;animation-iteration-count:1!important}
+  .flash .led,.flash .halo{animation:none!important;opacity:1}
+}
+</style>
+
+<svg width="0" height="0" style="position:absolute" aria-hidden="true" focusable="false">
+  <symbol id="i-home" viewBox="0 0 24 24"><path d="M3.5 10.5 12 4l8.5 6.5V20a1 1 0 0 1-1 1H15v-6H9v6H4.5a1 1 0 0 1-1-1z"/></symbol>
+  <symbol id="i-sound" viewBox="0 0 24 24"><path d="M4 9.5h3.5L12 6v12l-4.5-3.5H4z"/><path d="M15.5 9a4.5 4.5 0 0 1 0 6"/><path d="M18 6.5a8 8 0 0 1 0 11"/></symbol>
+  <symbol id="i-chart" viewBox="0 0 24 24"><path d="M4 20V11M10 20V5M16 20v-7M21 20H3"/></symbol>
+  <symbol id="i-gear" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3.2"/><path d="M12 2.8l1.7 2.4 2.9-.6.6 2.9 2.4 1.7-1.3 2.8 1.3 2.8-2.4 1.7-.6 2.9-2.9-.6L12 21.2l-1.7-2.4-2.9.6-.6-2.9-2.4-1.7L5.7 12 4.4 9.2l2.4-1.7.6-2.9 2.9.6z"/></symbol>
+  <symbol id="i-wifi" viewBox="0 0 24 24"><path d="M2.5 9a14 14 0 0 1 19 0M5.5 12.3a9.5 9.5 0 0 1 13 0M8.7 15.5a5 5 0 0 1 6.6 0"/><circle cx="12" cy="19" r="1.2" fill="currentColor" stroke="none"/></symbol>
+  <symbol id="i-bt" viewBox="0 0 24 24"><path d="M7 7.5l10 9-5 4.5V3l5 4.5-10 9"/></symbol>
+  <symbol id="i-relay" viewBox="0 0 24 24"><circle cx="12" cy="10" r="2"/><path d="M12 12v9M8.5 21h7M8 6a5.7 5.7 0 0 0 0 8M16 6a5.7 5.7 0 0 1 0 8M5 3.2a9.8 9.8 0 0 0 0 13.6M19 3.2a9.8 9.8 0 0 1 0 13.6"/></symbol>
+  <symbol id="i-cloud" viewBox="0 0 24 24"><path d="M7 19h10.5a4 4 0 0 0 .4-8 6 6 0 0 0-11.6-1.4A4.7 4.7 0 0 0 7 19z"/></symbol>
+  <symbol id="i-battery" viewBox="0 0 24 24"><rect x="2.5" y="7" width="17" height="10" rx="2.5"/><path d="M22 10.5v3M6 10.5v3M9.5 10.5v3"/></symbol>
+  <symbol id="i-sun" viewBox="0 0 24 24"><circle cx="12" cy="12" r="4"/><path d="M12 2.5v2M12 19.5v2M2.5 12h2M19.5 12h2M5.3 5.3l1.4 1.4M17.3 17.3l1.4 1.4M5.3 18.7l1.4-1.4M17.3 6.7l1.4-1.4"/></symbol>
+  <symbol id="i-moon" viewBox="0 0 24 24"><path d="M20 14.5A8 8 0 1 1 9.5 4a6.5 6.5 0 0 0 10.5 10.5z"/></symbol>
+  <symbol id="i-auto" viewBox="0 0 24 24"><circle cx="12" cy="12" r="8.5"/><path d="M12 3.5v17a8.5 8.5 0 0 0 0-17z" fill="currentColor"/></symbol>
+  <symbol id="i-bolt" viewBox="0 0 24 24"><path d="M13 2.5 4.5 14H11l-1 7.5L18.5 10H12z"/></symbol>
+  <symbol id="i-light" viewBox="0 0 24 24"><path d="M9 18h6M10 21h4M12 3a6 6 0 0 0-4 10.5c.8.8 1 1.6 1 2.5h6c0-.9.2-1.7 1-2.5A6 6 0 0 0 12 3z"/></symbol>
+  <symbol id="i-play" viewBox="0 0 24 24"><path d="M7 4.5v15l12.5-7.5z" fill="currentColor"/></symbol>
+  <symbol id="i-plus" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></symbol>
+  <symbol id="i-minus" viewBox="0 0 24 24"><path d="M5 12h14"/></symbol>
+  <symbol id="i-back" viewBox="0 0 24 24"><path d="M15 5l-7 7 7 7"/></symbol>
+  <symbol id="i-chev" viewBox="0 0 24 24"><path d="M9 5l7 7-7 7"/></symbol>
+  <symbol id="i-check" viewBox="0 0 24 24"><path d="M5 12.5l4.5 4.5L19 7"/></symbol>
+  <symbol id="i-shield" viewBox="0 0 24 24"><path d="M12 3l8 3v6c0 4.6-3.4 8.3-8 9-4.6-.7-8-4.4-8-9V6z"/><path d="M8.5 12l2.5 2.5 4.5-5"/></symbol>
+  <symbol id="i-pause" viewBox="0 0 24 24"><path d="M9 5.5v13M15 5.5v13"/></symbol>
+  <symbol id="i-bell" viewBox="0 0 24 24"><path d="M6 16.5V11a6 6 0 0 1 12 0v5.5l1.8 1.8H4.2zM10 21h4"/></symbol>
+  <symbol id="i-x" viewBox="0 0 24 24"><path d="M6 6l12 12M18 6 6 18"/></symbol>
+  <symbol id="i-pencil" viewBox="0 0 24 24"><path d="M4 20h4L19.5 8.5l-4-4L4 16zM13.5 6.5l4 4"/></symbol>
+  <symbol id="i-clock" viewBox="0 0 24 24"><circle cx="12" cy="12" r="8.5"/><path d="M12 7.5V12l3 2"/></symbol>
+  <symbol id="i-shuffle" viewBox="0 0 24 24"><path d="M3 7h3.5c2 0 3.2 1 4.3 2.7l2.4 4.6c1.1 1.7 2.3 2.7 4.3 2.7H21M3 17h3.5c1.4 0 2.4-.5 3.3-1.4M14.2 8.4c.9-.9 1.9-1.4 3.3-1.4H21M18.5 4.5 21 7l-2.5 2.5M18.5 14.5 21 17l-2.5 2.5"/></symbol>
+  <symbol id="i-lock" viewBox="0 0 24 24"><rect x="5" y="10.5" width="14" height="10" rx="2"/><path d="M8 10.5V8a4 4 0 0 1 8 0v2.5"/></symbol>
+  <symbol id="i-radar" viewBox="0 0 24 24"><circle cx="12" cy="12" r="2"/><path d="M7.8 16.2a6 6 0 0 1 0-8.4M16.2 7.8a6 6 0 0 1 0 8.4M4.9 19.1a10 10 0 0 1 0-14.2M19.1 4.9a10 10 0 0 1 0 14.2"/></symbol>
+  <symbol id="i-chip" viewBox="0 0 24 24"><rect x="6" y="6" width="12" height="12" rx="2"/><path d="M9 3v3M15 3v3M9 18v3M15 18v3M3 9h3M3 15h3M18 9h3M18 15h3"/></symbol>
+  <symbol id="i-info" viewBox="0 0 24 24"><circle cx="12" cy="12" r="8.5"/><path d="M12 11v5.5M12 7.6v.2"/></symbol>
+  <symbol id="i-deer" viewBox="0 0 100 100"><path d="M20 44 26 40C40 37 54 38 62 40L74 20 72 12 77 17 80 16 86 19 93 25 91 29 82 30 72 46 70 58 70 97 66 97 65 64 63 97 59 97 58 64C48 66 40 66 34 64L35 97 31 97 28 70 26 97 22 97 21 62C18 56 17 50 20 44Z"/><path class="antler" d="M78 16 74 6 70 2M74 6 77 0M81 16 85 7 89 4M85 7 84 1"/></symbol>
+</svg>
+
+<div class="page" id="page">
+  <aside class="presenter left" aria-label="Live demo">
+    <div class="brandband">
+      <div class="brand">
+        <svg class="logo" viewBox="0 0 100 100" aria-hidden="true"><rect class="lg-d" x="16" y="16" width="68" height="68" rx="9" transform="rotate(45 50 50)" stroke-width="3.5"/><path class="lg-deer" transform="translate(50 50) scale(.56) translate(-49 -44)" d="M70 8l3 9 6-6-2 9 7-3-6 8 5 2-9 3-3 7 4 5-2 8-8 3-26 2-8 6-3 18-5 1 1-17-5 15-5 0 4-19-4-9 4-10 12-5 26-1 5-5 3-6-3-6 2-3 3 3 1-8z"/></svg>
+        <div><b>WildGuard</b><span>Smart Protection, Wild Solutions.</span></div>
+      </div>
+    </div>
+    <div class="intro">
+      <p class="eyebrow">Garden Sensor · companion app demo</p>
+      <h1>Your whole garden on one screen</h1>
+      <p class="lede">Pair a node over Bluetooth, then set its volume, lights and sounds from anywhere over home Wi-Fi. Every node in this demo is simulated.</p>
+    </div>
+
+    <section class="scenecard" aria-label="Live view of a garden node">
+      <div class="scenehead"><span>Live view · <b id="sceneName">Vegetable Bed</b></span><span class="pill" id="scenePill"><i></i><span>Monitoring</span></span></div>
+      <svg id="scene" viewBox="0 0 560 250" role="img" aria-label="A WildGuard garden sensor on a stake beside a vegetable bed at night">
+        <defs>
+          <linearGradient id="gSky" x1="0" y1="0" x2="0" y2="1"><stop offset="0" style="stop-color:var(--sc-sky1)"/><stop offset="1" style="stop-color:var(--sc-sky2)"/></linearGradient>
+          <radialGradient id="gHalo"><stop offset="0" style="stop-color:var(--led-glow);stop-opacity:.6"/><stop offset=".45" style="stop-color:var(--led-glow);stop-opacity:.18"/><stop offset="1" style="stop-color:var(--led-glow);stop-opacity:0"/></radialGradient>
+          <linearGradient id="gCone" x1="0" y1="0" x2="1" y2="0"><stop offset="0" style="stop-color:var(--sc-cone);stop-opacity:.3"/><stop offset="1" style="stop-color:var(--sc-cone);stop-opacity:0"/></linearGradient>
+        </defs>
+        <rect width="560" height="250" fill="url(#gSky)"/>
+        <g class="sc-star"><circle cx="40" cy="30" r="1.2"/><circle cx="96" cy="58" r="1"/><circle cx="150" cy="22" r="1.4"/><circle cx="214" cy="48" r="1"/><circle cx="268" cy="18" r="1.2"/><circle cx="330" cy="40" r="1"/><circle cx="392" cy="24" r="1.3"/><circle cx="430" cy="70" r="1"/><circle cx="528" cy="30" r="1.2"/><circle cx="20" cy="80" r="1"/></g>
+        <circle class="sc-moon" cx="482" cy="50" r="17"/>
+        <path class="sc-trees" d="M0 150C30 122 58 136 80 118 102 100 130 126 152 112 176 96 204 122 232 108 262 94 292 118 322 104 352 90 382 116 412 106 442 96 472 122 502 110 528 100 546 114 560 108V200H0Z"/>
+        <g class="sc-fence"><rect x="0" y="148" width="560" height="4"/><rect x="0" y="168" width="560" height="4"/><rect x="12" y="140" width="6" height="56"/><rect x="74" y="140" width="6" height="56"/><rect x="136" y="140" width="6" height="56"/><rect x="198" y="140" width="6" height="56"/><rect x="260" y="140" width="6" height="56"/><rect x="322" y="140" width="6" height="56"/><rect x="384" y="140" width="6" height="56"/><rect x="446" y="140" width="6" height="56"/><rect x="508" y="140" width="6" height="56"/></g>
+        <rect class="sc-ground" x="0" y="190" width="560" height="60"/>
+        <path class="sc-ground2" d="M0 214C120 206 260 220 400 210 470 205 520 212 560 208V250H0Z"/>
+        <rect class="sc-bed" x="18" y="196" width="252" height="16" rx="5"/>
+        <g><circle class="sc-leaf" cx="36" cy="192" r="11"/><circle class="sc-leaf2" cx="62" cy="194" r="9"/><circle class="sc-leaf" cx="88" cy="191" r="12"/><circle class="sc-leaf2" cx="118" cy="194" r="9"/><circle class="sc-leaf2" cx="200" cy="194" r="9"/><circle class="sc-leaf" cx="226" cy="191" r="12"/><circle class="sc-leaf2" cx="254" cy="194" r="9"/></g>
+        <g id="rig">
+          <path class="cone" d="M198 125 560 84V206Z" fill="url(#gCone)"/>
+          <circle class="halo" cx="178" cy="125" r="118" fill="url(#gHalo)"/>
+          <svg x="128" y="74" width="100" height="142" viewBox="-14 0 148 210" class="na" id="sceneNode"></svg>
+        </g>
+        <g id="deerPos" style="transform:translate(640px,92px)"><g id="deerFlip"><g id="deerBob"><use href="#i-deer" width="122" height="122"/></g></g></g>
+        <path class="sc-ground2" d="M0 236c20-8 30-8 40 0 14-10 24-10 34 0 10-7 20-7 30 0V250H0Z"/>
+      </svg>
+      <p class="scenestatus" id="sceneStatus" aria-live="polite">Vegetable Bed is watching for motion.</p>
+      <div class="simrow">
+        <label for="simNode" class="sr">Node to visit</label>
+        <select id="simNode"></select>
+        <button class="btn" id="simGo" type="button"><svg class="deer-ic" aria-hidden="true"><use href="#i-deer"/></svg>Send a deer</button>
+      </div>
+    </section>
+  </aside>
+
+  <aside class="presenter right" aria-label="How it connects and demo settings">
+    <section class="how" aria-label="How the app connects to the nodes">
+      <h2>How it connects</h2>
+      <ol class="howlist">
+        <li><span class="hi"><svg class="ic"><use href="#i-bt"/></svg></span><div><b>Setup over Bluetooth</b><span>Your phone pairs with a new node in under a minute.</span></div></li>
+        <li><span class="hi"><svg class="ic"><use href="#i-wifi"/></svg></span><div><b>Every day over Wi-Fi</b><span>The node joins home Wi-Fi, so the app reaches it from anywhere through WildGuard Cloud.</span></div></li>
+        <li><span class="hi"><svg class="ic"><use href="#i-relay"/></svg></span><div><b>Far corners by radio relay</b><span>A node past Wi-Fi range passes its messages through a nearby node.</span></div></li>
+      </ol>
+    </section>
+    <section class="demoset" aria-label="Demo settings">
+      <h2>Demo settings</h2>
+      <label class="pref"><span class="sw"><input type="checkbox" id="audioOn" checked><span></span></span>Play sounds on this computer</label>
+      <div class="seg mini" role="group" aria-label="Theme" data-themeseg>
+        <button type="button" data-theme-set="light"><svg class="ic"><use href="#i-sun"/></svg>Light</button>
+        <button type="button" data-theme-set="dark"><svg class="ic"><use href="#i-moon"/></svg>Dark</button>
+        <button type="button" data-theme-set="auto"><svg class="ic"><use href="#i-auto"/></svg>Auto</button>
+      </div>
+      <button class="btn ghost" id="restart" type="button">Restart demo</button>
+    </section>
+    <p class="foot">WildGuard · COB300 Section 4 · Team 6</p>
+  </aside>
+
+  <div class="phone-col">
+    <div class="phone-slot" id="slot">
+      <div class="phone" id="phone">
+        <div class="screen" id="app">
+          <div class="island"></div>
+          <div class="statusbar" aria-hidden="true">
+            <span id="sbTime">9:41</span>
+            <span class="sbr">
+              <svg viewBox="0 0 18 12"><rect x="0" y="8" width="3" height="4" rx="1"/><rect x="5" y="5.5" width="3" height="6.5" rx="1"/><rect x="10" y="3" width="3" height="9" rx="1"/><rect x="15" y="0" width="3" height="12" rx="1"/></svg>
+              <svg viewBox="0 0 16 12"><path d="M8 2.2c2.4 0 4.6.9 6.3 2.4l1.2-1.3A11 11 0 0 0 8 .4 11 11 0 0 0 .5 3.3l1.2 1.3A9.2 9.2 0 0 1 8 2.2zm0 3.6c1.4 0 2.7.5 3.7 1.4l1.2-1.3A7.4 7.4 0 0 0 8 4a7.4 7.4 0 0 0-4.9 1.9l1.2 1.3c1-.9 2.3-1.4 3.7-1.4zM8 9.4l2.2-2.3a3.3 3.3 0 0 0-4.4 0z"/></svg>
+              <svg viewBox="0 0 27 12"><rect x=".5" y=".5" width="22" height="11" rx="3" fill="none" stroke="currentColor" opacity=".45"/><rect x="2" y="2" width="17" height="8" rx="1.6"/><path d="M24.5 4v4c.8-.3 1.4-1.1 1.4-2s-.6-1.7-1.4-2z" opacity=".5"/></svg>
+            </span>
+          </div>
+          <div class="views">
+            <section class="view" id="v-home" aria-label="My Yard"></section>
+            <section class="view" id="v-sounds" aria-label="Sounds" hidden></section>
+            <section class="view" id="v-activity" aria-label="Activity" hidden></section>
+            <section class="view" id="v-settings" aria-label="Settings" hidden></section>
+            <section class="push" id="v-node" aria-label="Node settings"></section>
+          </div>
+          <nav class="tabbar" aria-label="App sections">
+            <button type="button" data-act="tab" data-tab="home" aria-current="page"><svg class="ic"><use href="#i-home"/></svg>My Yard</button>
+            <button type="button" data-act="tab" data-tab="sounds"><svg class="ic"><use href="#i-sound"/></svg>Sounds</button>
+            <button type="button" data-act="tab" data-tab="activity"><svg class="ic"><use href="#i-chart"/></svg>Activity</button>
+            <button type="button" data-act="tab" data-tab="settings"><svg class="ic"><use href="#i-gear"/></svg>Settings</button>
+          </nav>
+          <button class="banner" id="banner" type="button" data-act="banner" aria-live="polite"></button>
+          <div class="toast" id="toast" role="status"></div>
+          <div class="scrim" id="scrim" data-act="scrim" hidden></div>
+          <div class="sheet" id="sheet" role="dialog" aria-modal="true" aria-label="Add a node"></div>
+          <div class="splash" id="splash" aria-hidden="true">
+            <svg viewBox="0 0 100 100"><rect class="lg-d" x="16" y="16" width="68" height="68" rx="9" transform="rotate(45 50 50)" stroke-width="3.5"/><path class="lg-deer" transform="translate(50 50) scale(.56) translate(-49 -44)" d="M70 8l3 9 6-6-2 9 7-3-6 8 5 2-9 3-3 7 4 5-2 8-8 3-26 2-8 6-3 18-5 1 1-17-5 15-5 0 4-19-4-9 4-10 12-5 26-1 5-5 3-6-3-6 2-3 3 3 1-8z"/></svg>
+            <b>WildGuard</b><span>Smart Protection, Wild Solutions.</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+(function(){
+"use strict";
+const $=(s,r=document)=>r.querySelector(s), $$=(s,r=document)=>[...r.querySelectorAll(s)];
+const esc=s=>String(s).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const ic=(n,cls="")=>`<svg class="ic ${cls}" aria-hidden="true"><use href="#i-${n}"/></svg>`;
+const DEER=`<svg class="deer-ic" aria-hidden="true" viewBox="0 0 100 100"><use href="#i-deer"/></svg>`;
+const LOGO_D="M70 8l3 9 6-6-2 9 7-3-6 8 5 2-9 3-3 7 4 5-2 8-8 3-26 2-8 6-3 18-5 1 1-17-5 15-5 0 4-19-4-9 4-10 12-5 26-1 5-5 3-6-3-6 2-3 3 3 1-8z";
+const LOGO=`<svg viewBox="0 0 100 100" aria-hidden="true"><rect class="lg-d" x="16" y="16" width="68" height="68" rx="9" transform="rotate(45 50 50)" stroke-width="4"/><path class="lg-deer" transform="translate(50 50) scale(.56) translate(-49 -44)" d="${LOGO_D}"/></svg>`;
+const DIAMOND=`<svg viewBox="0 0 100 100" aria-hidden="true"><rect class="lg-d" x="20" y="20" width="60" height="60" rx="9" transform="rotate(45 50 50)" stroke-width="6"/></svg>`;
+const MIN=60000;
+const PAT={random:"Random",strobe:"Strobe",pulse:"Pulse",chase:"Chase"};
+const SENS_HINT={Low:"Ignores small animals like squirrels and cats.",Medium:"Good for deer, rabbits and groundhogs.",High:"Also catches small, fast animals."};
+const SOUNDS=[
+  {id:"coyote",name:"Coyote howl",cat:"pred",dur:"2.6 s",best:["Deer","Rabbits"],def:true},
+  {id:"wolf",name:"Wolf howl",cat:"pred",dur:"2.8 s",best:["Deer"],def:true},
+  {id:"bark",name:"Barking dog",cat:"pred",dur:"1.0 s",best:["Deer","Raccoons"],def:true},
+  {id:"growl",name:"Growling dog",cat:"pred",dur:"1.5 s",best:["Raccoons","Deer"],def:false},
+  {id:"hawk",name:"Red-tailed hawk",cat:"pred",dur:"1.2 s",best:["Birds","Rabbits"],def:true},
+  {id:"owl",name:"Great horned owl",cat:"pred",dur:"1.9 s",best:["Rabbits","Birds"],def:true},
+  {id:"siren",name:"Siren chirp",cat:"alarm",dur:"1.4 s",best:["Deer","Raccoons"],def:true},
+  {id:"horn",name:"Air horn",cat:"alarm",dur:"1.1 s",best:["Deer"],def:false},
+  {id:"beeps",name:"Alarm beeps",cat:"alarm",dur:"0.8 s",best:["Raccoons"],def:false},
+  {id:"sweep",name:"High-pitch sweep",cat:"alarm",dur:"1.2 s",best:["Rabbits","Raccoons"],def:false},
+  {id:"claps",name:"Hand claps",cat:"startle",dur:"0.7 s",best:["Birds","Raccoons"],def:true},
+  {id:"thunder",name:"Thunder crack",cat:"startle",dur:"1.9 s",best:["Deer","Birds"],def:true}
+];
+const CATS=[["pred","Predator calls"],["alarm","Alarms"],["startle","Startle sounds"]];
+const TARGETS=["Deer","Rabbits","Raccoons","Birds"];
+const SPOTS=[{x:178,y:116},{x:64,y:116},{x:306,y:100}];
+
+let state, timers=[], busy=false, runId=0, renderT=0, hits={};
+const later=(fn,ms)=>{const t=setTimeout(fn,ms);timers.push(t);return t;};
+const wait=ms=>new Promise(r=>later(r,ms));
+
+function freshState(prev){
+  const t=Date.now(), y=new Date(); y.setDate(y.getDate()-1);
+  const at=(h,m)=>{const d=new Date(y);d.setHours(h,m,0,0);return d.getTime();};
+  const snd={};SOUNDS.forEach(s=>snd[s.id]=s.def);
+  return {
+    theme:prev?prev.theme:"auto", audioOn:prev?prev.audioOn:true,
+    tab:"home", nodeOpen:null, sheet:null, paused:false, pauseUntil:0,
+    quiet:false, rotate:true, lastSnd:null, rot:0,
+    notify:{alerts:true,summary:true,battery:true},
+    snd,
+    nodes:[
+      {id:"n1",name:"Vegetable Bed",armed:true,sound:true,volume:70,lights:true,pattern:"random",bright:80,range:5,sens:"Medium",hours:"always",battery:87,link:"wifi",sig:"Strong",serial:"WG-G1-4F2A",x:256,y:45,last:t-12*MIN},
+      {id:"n2",name:"Front Flower Bed",armed:true,sound:true,volume:50,lights:true,pattern:"strobe",bright:70,range:4,sens:"Medium",hours:"always",battery:93,link:"wifi",sig:"Good",serial:"WG-G1-91B3",x:82,y:166,last:t-100*MIN},
+      {id:"n3",name:"Berry Patch",armed:true,sound:false,volume:80,lights:true,pattern:"pulse",bright:90,range:6,sens:"High",hours:"always",battery:64,link:"relay",via:"n1",sig:"Good",shade:true,serial:"WG-G1-0C57",x:276,y:160,last:at(18,52)}
+    ],
+    log:[
+      {t:t-12*MIN,kind:"deter",node:"Vegetable Bed",title:"Wildlife turned away",detail:"Coyote howl + chase lights · left after 4 s"},
+      {t:t-100*MIN,kind:"deter",node:"Front Flower Bed",title:"Wildlife turned away",detail:"Barking dog + strobe lights · left after 6 s"},
+      {t:t-205*MIN,kind:"info",node:"Berry Patch",title:"Low sun today",detail:"Battery at 64%. This spot is shady, so top it up with the charging port if it drops below 30%."},
+      {t:at(20,14),kind:"deter",node:"Vegetable Bed",title:"Wildlife turned away",detail:"Great horned owl + pulse lights · left after 5 s"},
+      {t:at(18,52),kind:"deter",node:"Berry Patch",title:"Wildlife turned away",detail:"Pulse lights only (sound off) · left after 9 s"},
+      {t:at(7,30),kind:"info",node:"All nodes",title:"Update installed",detail:"Firmware 1.4.2 makes sound shuffling smarter."}
+    ],
+    week:[4,6,3,5,7,4], weekMiss:1
+  };
+}
+
+const node=id=>state.nodes.find(n=>n.id===id);
+const fmtTime=d=>new Date(d).toLocaleTimeString([], {hour:"numeric",minute:"2-digit"});
+const sameDay=(a,b)=>{a=new Date(a);b=new Date(b);return a.toDateString()===b.toDateString();};
+function ago(d){const m=Math.round((Date.now()-d)/MIN);if(m<1)return "just now";if(m<60)return m+" min ago";const h=Math.floor(m/60);if(h<24)return h+" h ago";const dd=Math.floor(h/24);return dd===1?"yesterday":dd+" days ago";}
+const hr=()=>new Date().getHours();
+const isNight=()=>{const h=hr();return h>=17||h<7;};
+const inQuiet=()=>{const h=hr();return h>=22||h<6;};
+const todayEvents=()=>state.log.filter(e=>(e.kind==="deter"||e.kind==="miss")&&sameDay(e.t,Date.now()));
+function volWord(v){return v===0?"Muted":v<=30?"Quiet":v<=70?"Medium":"Loud";}
+function linkText(n){return n.link==="wifi"?"Wi-Fi":"Relay via "+(node(n.via)?node(n.via).name:"nearby node");}
+function solar(n){const h=hr();if(h>=7&&h<17){return n.shade?{v:"0.6 W",s:"Charging slowly · shady spot"}:{v:"3.1 W",s:"Charging in sun"};}return {v:"Resting",s:"On battery tonight"};}
+
+/* ---------------- node artwork ---------------- */
+const NODE_ART=`
+  <path class="na-stake" d="M56 112h8v80l-4 14-4-14z"/>
+  <path class="na-panel" d="M24 30h72l10 22H14z"/>
+  <path class="na-grid" d="M42 30l-3.4 22M60 30v22M78 30l3.4 22M19 41h82"/>
+  <rect class="na-body" x="16" y="52" width="88" height="62" rx="17"/>
+  <circle class="na-lens" cx="60" cy="76" r="12"/>
+  <path class="na-lensf" d="M50 72h20M49 78h22M52 84h16"/>
+  <rect class="led l1" x="24" y="68" width="14" height="17" rx="5"/>
+  <rect class="led l2" x="82" y="68" width="14" height="17" rx="5"/>
+  <g class="na-grill"><circle cx="46" cy="101" r="2"/><circle cx="53" cy="101" r="2"/><circle cx="60" cy="101" r="2"/><circle cx="67" cy="101" r="2"/><circle cx="74" cy="101" r="2"/></g>
+  <rect class="na-mark" x="91" y="98" width="6" height="6" transform="rotate(45 94 101)"/>
+  <g class="waves"><path d="M112 70a16 16 0 0 1 0 24"/><path d="M120 62a28 28 0 0 1 0 40"/><path d="M8 70a16 16 0 0 0 0 24"/><path d="M0 62a28 28 0 0 0 0 40"/></g>`;
+const nodeSvg=(cls="")=>`<svg class="na ${cls}" viewBox="-14 0 148 210" aria-hidden="true">${NODE_ART}</svg>`;
+
+/* ---------------- audio ---------------- */
+let AC=null, NB=null;
+function actx(){try{if(!AC){const C=window.AudioContext||window.webkitAudioContext;if(!C)return null;AC=new C();}if(AC.state==="suspended")AC.resume();return AC;}catch(e){return null;}}
+function nbuf(c){if(NB)return NB;const b=c.createBuffer(1,c.sampleRate*2,c.sampleRate),d=b.getChannelData(0);for(let i=0;i<d.length;i++)d[i]=Math.random()*2-1;return NB=b;}
+function ramp(p,pts,t0){pts.forEach(([dt,v],i)=>{v=Math.max(v,1e-4);if(!i)p.setValueAtTime(v,t0+dt);else p.exponentialRampToValueAtTime(v,t0+dt);});return pts[pts.length-1][0];}
+function osc(c,out,t0,o){const s=c.createOscillator();s.type=o.type||"sine";ramp(s.frequency,o.f,t0);const g=c.createGain();const end=ramp(g.gain,o.g,t0);let n=s;
+  if(o.filt){const b=c.createBiquadFilter();b.type=o.filt[0];b.frequency.value=o.filt[1];b.Q.value=o.filt[2]||.7;s.connect(b);n=b;}
+  if(o.vib){const l=c.createOscillator(),lg=c.createGain();l.frequency.value=o.vib[0];lg.gain.value=o.vib[1];l.connect(lg);lg.connect(s.frequency);l.start(t0);l.stop(t0+end+.1);}
+  n.connect(g);g.connect(out);s.start(t0);s.stop(t0+end+.1);return end;}
+function nz(c,out,t0,o){const s=c.createBufferSource();s.buffer=nbuf(c);s.loop=true;const b=c.createBiquadFilter();b.type=o.filt[0];b.Q.value=o.filt[2]||.7;
+  if(Array.isArray(o.filt[1]))ramp(b.frequency,o.filt[1],t0);else b.frequency.value=o.filt[1];
+  const g=c.createGain();const end=ramp(g.gain,o.g,t0);s.connect(b);b.connect(g);g.connect(out);s.start(t0);s.stop(t0+end+.1);return end;}
+const SYN={
+  coyote(c,o,t){[0,.2,.4].forEach(d=>osc(c,o,t+d,{f:[[0,700],[.1,1250]],g:[[0,0],[.02,.35],[.13,0]]}));
+    osc(c,o,t+.65,{f:[[0,600],[.4,1150],[1.4,1000],[1.95,640]],g:[[0,0],[.3,.45],[1.5,.4],[1.95,0]],vib:[7,22]});
+    osc(c,o,t+.65,{type:"triangle",f:[[0,1200],[.4,2300],[1.4,2000],[1.95,1280]],g:[[0,0],[.3,.08],[1.5,.07],[1.95,0]],vib:[7,44]});return 2.6;},
+  wolf(c,o,t){osc(c,o,t,{f:[[0,300],[.6,520],[2.1,470],[2.8,290]],g:[[0,0],[.45,.5],[2.2,.42],[2.8,0]],vib:[5,9]});
+    osc(c,o,t,{type:"triangle",f:[[0,600],[.6,1040],[2.1,940],[2.8,580]],g:[[0,0],[.45,.1],[2.2,.08],[2.8,0]],vib:[5,18]});return 2.8;},
+  bark(c,o,t){[0,.3,.62].forEach(d=>{osc(c,o,t+d,{type:"sawtooth",f:[[0,560],[.04,620],[.15,260]],g:[[0,0],[.012,.7],[.17,0]],filt:["bandpass",900,.9]});
+    nz(c,o,t+d,{filt:["bandpass",1600,1.2],g:[[0,0],[.01,.35],[.1,0]]});});return 1.0;},
+  growl(c,o,t){osc(c,o,t,{type:"sawtooth",f:[[0,90],[.5,115],[1.1,100],[1.5,85]],g:[[0,0],[.15,.7],[1.2,.6],[1.5,0]],filt:["lowpass",700,1.5],vib:[24,18]});
+    nz(c,o,t,{filt:["lowpass",500,.7],g:[[0,0],[.2,.2],[1.2,.18],[1.5,0]]});return 1.5;},
+  hawk(c,o,t){osc(c,o,t,{type:"sawtooth",f:[[0,3300],[.12,3000],[1,1800]],g:[[0,0],[.04,.32],[.7,.26],[1.15,0]],filt:["bandpass",2600,1.8],vib:[38,160]});return 1.2;},
+  owl(c,o,t){[[0,.22],[.32,.2],[.72,.6],[1.5,.3]].forEach(([d,l])=>osc(c,o,t+d,{f:[[0,400],[l,340]],g:[[0,0],[.05,.55],[l-.05,.45],[l,0]]}));return 1.9;},
+  siren(c,o,t){osc(c,o,t,{type:"square",f:[[0,700],[.35,1500],[.7,700],[1.05,1500],[1.4,700]],g:[[0,0],[.03,.22],[1.3,.22],[1.4,0]],filt:["lowpass",3200,.7]});return 1.4;},
+  horn(c,o,t){[370,440,554].forEach(f=>osc(c,o,t,{type:"sawtooth",f:[[0,f*.97],[.06,f],[1.05,f]],g:[[0,0],[.03,.2],[.95,.18],[1.1,0]],filt:["lowpass",2400,.8]}));return 1.1;},
+  beeps(c,o,t){[0,.2,.4,.6].forEach(d=>osc(c,o,t+d,{type:"square",f:[[0,2800],[.12,2800]],g:[[0,0],[.005,.16],[.11,.16],[.12,0]],filt:["lowpass",5000,.7]}));return .8;},
+  sweep(c,o,t){osc(c,o,t,{f:[[0,8000],[.6,12000],[1.2,8000]],g:[[0,0],[.08,.18],[1.1,.18],[1.2,0]]});return 1.2;},
+  claps(c,o,t){[0,.17,.34,.51].forEach(d=>nz(c,o,t+d,{filt:["bandpass",1300,.8],g:[[0,0],[.004,.9],[.1,0]]}));return .7;},
+  thunder(c,o,t){nz(c,o,t,{filt:["lowpass",[[0,2400],[.15,700],[1.9,160]],.6],g:[[0,0],[.02,.9],[.35,.45],[1.9,0]]});return 1.9;}
+};
+const DUR={coyote:2.6,wolf:2.8,bark:1,growl:1.5,hawk:1.2,owl:1.9,siren:1.4,horn:1.1,beeps:.8,sweep:1.2,claps:.7,thunder:1.9};
+function playSound(id,vol){
+  const d=DUR[id]||1.5;
+  if(!state.audioOn||vol<=0)return d;
+  const c=actx();if(!c)return d;
+  try{const m=c.createGain();m.gain.value=Math.pow(vol/100,1.6)*.9;const k=c.createDynamicsCompressor();m.connect(k);k.connect(c.destination);SYN[id](c,m,c.currentTime+.03);}catch(e){}
+  return d;
+}
+
+/* ---------------- render: home ---------------- */
+function sw(id,on,attrs,label){return `<label class="sw"><input type="checkbox" id="${id}" ${on?"checked":""} ${attrs} aria-label="${esc(label)}"><span></span></label>`;}
+function mapSVG(){
+  const ns=state.nodes;
+  let s=`<svg class="yard" viewBox="0 0 342 214" role="img" aria-label="Yard map showing ${ns.length} nodes and their detection range">
+  <rect class="y-lawn" x="1" y="1" width="340" height="212" rx="14"/>
+  <rect class="y-fence" x="6" y="6" width="330" height="202" rx="10"/>
+  <rect class="y-house" x="16" y="16" width="110" height="66" rx="6"/>
+  <text class="y-txt" x="71" y="43" text-anchor="middle">HOUSE</text>
+  <g transform="translate(62 52)"><path class="y-wifi" d="M0 6a12 12 0 0 1 18 0M3.5 9.5a7 7 0 0 1 11 0"/><circle cx="9" cy="13" r="1.8" fill="currentColor" style="fill:var(--muted)"/></g>
+  <rect class="y-patio" x="126" y="28" width="44" height="42" rx="3"/>
+  <rect class="y-bed" x="196" y="20" width="124" height="48" rx="9"/>
+  <rect class="y-bed" x="18" y="146" width="130" height="42" rx="9"/>
+  <rect class="y-bed" x="226" y="130" width="100" height="62" rx="28"/>`;
+  [[212,36],[232,52],[252,32],[272,54],[292,36],[306,52],[34,160],[54,174],[74,158],[96,176],[116,160],[134,174],[244,150],[262,174],[290,146],[308,170]].forEach(([x,y])=>{s+=`<circle class="y-plant" cx="${x}" cy="${y}" r="4.5"/>`;});
+  ns.forEach(n=>{if(n.link==="relay"&&node(n.via)){const v=node(n.via);s+=`<line class="y-relay" x1="${n.x}" y1="${n.y}" x2="${v.x}" y2="${v.y}"/>`;}});
+  ns.forEach(n=>{s+=`<circle class="y-cov ${n.armed&&!state.paused?"":"off"}" cx="${n.x}" cy="${n.y}" r="${n.range*7}"/>`;});
+  ns.forEach(n=>{const h=hits[n.id]&&hits[n.id].until>Date.now();
+    s+=`<g class="pin ${n.armed?"":"off"} ${h?"hit":""} ${h&&hits[n.id].miss?"miss":""}" data-act="open" data-id="${n.id}" id="pin-${n.id}" tabindex="0" role="button" aria-label="Open ${esc(n.name)}">
+      <circle class="p-ring" cx="${n.x}" cy="${n.y}" r="11"/>
+      <circle class="p-bg" cx="${n.x}" cy="${n.y}" r="11"/>
+      <rect class="p-d" x="${n.x-5}" y="${n.y-5}" width="10" height="10" rx="1.5" transform="rotate(45 ${n.x} ${n.y})"/>
+      <use class="p-deer" href="#i-deer" x="${n.x+12}" y="${n.y-26}" width="22" height="22"/>
+      <text class="p-lbl" x="${n.x}" y="${n.y+25}" text-anchor="middle">${esc(n.name)}</text></g>`;});
+  return s+`</svg>`;
+}
+function nodeCard(n){
+  return `<div class="ncard ${n.armed?"":"off"}" data-act="open" data-id="${n.id}" id="card-${n.id}">
+    <button class="nmain" type="button" data-act="open" data-id="${n.id}"><span class="npin">${DIAMOND}</span>
+      <span class="ntext"><b>${esc(n.name)}</b><span>${esc(linkText(n))} · ${n.last?"Last visit "+ago(n.last):"No visits yet"}</span></span></button>
+    ${sw("arm-"+n.id,n.armed,`data-node="${n.id}" data-key="armed"`,`${n.name} on or off`)}
+    <div class="nmeta">
+      <span class="${n.battery<30?"low":""}">${ic("battery")}${n.battery}%</span>
+      <span class="${n.sound?"":"dim"}">${ic("sound")}${n.sound?n.volume+"%":"Sound"}</span>
+      <span class="${n.lights?"":"dim"}">${ic("light")}${n.lights?PAT[n.pattern]:"Lights"}</span>
+    </div></div>`;
+}
+function logIcon(e){return e.kind==="deter"?`<span class="li deter">${DEER}</span>`:e.kind==="miss"?`<span class="li">${DEER}</span>`:`<span class="li">${ic("info")}</span>`;}
+function logRow(e){return `<div class="lrow">${logIcon(e)}<div class="lt"><b>${esc(e.title)}</b><span>${esc(e.node)} · ${esc(e.detail)}</span></div><time>${fmtTime(e.t)}</time></div>`;}
+function renderHome(){
+  const ns=state.nodes, on=ns.filter(n=>n.armed).length, te=todayEvents(), turned=te.filter(e=>e.kind==="deter").length;
+  const lastT=Math.max(...ns.map(n=>n.last||0));
+  const p=state.paused, hasRelay=ns.some(n=>n.link==="relay");
+  $("#v-home").innerHTML=`
+  <header class="ahead"><div class="abrand">${LOGO}<span>WildGuard</span></div>
+    <button class="iconbtn" type="button" data-act="add" aria-label="Add a node">${ic("plus")}</button></header>
+  <h1 class="ttl">My Yard</h1>
+  <p class="sub">${ns.length} nodes · ${lastT?"last visit "+ago(lastT):"no visits yet"}</p>
+  <div class="hero ${p?"paused":""}">
+    <div class="hero-top"><span class="hero-ic">${ic(p?"pause":"shield")}</span>
+      <div><b>${p?"Protection paused":on===0?"All nodes off":"Yard protected"}</b><span>${p?"Back on at "+fmtTime(state.pauseUntil):`${on} of ${ns.length} nodes on`}</span></div></div>
+    <div class="hero-stats"><div><b>${te.length}</b><span>visits today</span></div><div><b>${turned}</b><span>turned away</span></div>
+      <button class="hero-btn" type="button" data-act="${p?"resume":"pause"}">${ic(p?"shield":"pause")}${p?"Resume":"Pause 1 hr"}</button></div>
+  </div>
+  <div class="sh"><span>Yard map</span><span class="legend"><span><i class="cov"></i>Range</span>${hasRelay?`<span><i></i>Relay</span>`:""}</span></div>
+  <div class="card mapcard">${mapSVG()}</div>
+  <div class="sh"><span>Nodes</span></div>
+  <div class="nodes">${ns.map(nodeCard).join("")}<button class="addcard" type="button" data-act="add">${ic("plus")}Add a node</button></div>
+  <div class="sh"><span>Recent activity</span><button class="lnk" type="button" data-act="tab" data-tab="activity">See all</button></div>
+  <div class="card list">${state.log.slice(0,3).map(logRow).join("")}</div>`;
+}
+
+/* ---------------- render: node detail ---------------- */
+function spark(n){
+  const pts=[];let v=n.battery;const h0=hr();
+  for(let i=0;i<=24;i++){pts.unshift(v);const h=(h0-i+48)%24;const day=h>=8&&h<16;v=Math.max(8,Math.min(100,v-(day?(n.shade?1:3.2):-1.1)));}
+  const W=120,H=26,x=i=>i/24*W,y=v=>H-2-(v/100)*(H-4);
+  const line=pts.map((p,i)=>`${i?"L":"M"}${x(i).toFixed(1)} ${y(p).toFixed(1)}`).join("");
+  return `<svg class="spark" viewBox="0 0 ${W} ${H}" preserveAspectRatio="none" aria-hidden="true"><path class="a" d="${line}L${W} ${H}L0 ${H}Z"/><path class="l" d="${line}" vector-effect="non-scaling-stroke"/></svg>`;
+}
+function renderNode(){
+  const n=node(state.nodeOpen);if(!n)return;
+  const so=solar(n), via=node(n.via);
+  $("#v-node").innerHTML=`
+  <header class="ahead"><button class="back" type="button" data-act="back">${ic("back")}My Yard</button>
+    <button class="iconbtn" type="button" data-act="rename" aria-label="Rename this node">${ic("pencil")}</button></header>
+  <div class="nhero"><div class="nart" id="appArt">${nodeSvg()}</div>
+    <div><p class="eyebrow">Garden Sensor</p><h1 class="ttl sm">${esc(n.name)}</h1>
+      <div class="armrow"><span class="st"><span class="dot ${n.armed&&!state.paused?"ok":""}"></span>${!n.armed?"Turned off":state.paused?"Paused":"On and watching"}</span>
+      ${sw("armd-"+n.id,n.armed,`data-node="${n.id}" data-key="armed"`,"Node on or off")}</div></div></div>
+  <div class="stats4">
+    <div class="stat"><span class="k">${ic("battery")}Battery</span><b>${n.battery}%</b>${spark(n)}</div>
+    <div class="stat"><span class="k">${ic("sun")}Solar</span><b>${so.v}</b><span class="s">${so.s}</span></div>
+    <div class="stat"><span class="k">${ic(n.link==="wifi"?"wifi":"relay")}Connection</span><b>${n.link==="wifi"?"Wi-Fi":"Relay"}</b><span class="s">${n.link==="wifi"?n.sig+" signal":"Through "+esc(via?via.name:"a nearby node")}</span></div>
+    <div class="stat"><span class="k">${ic("clock")}Last visit</span><b>${n.last?ago(n.last).replace(" ago",""):"None"}</b><span class="s">${n.last?(sameDay(n.last,Date.now())?"Today ":"")+fmtTime(n.last):"Waiting for wildlife"}</span></div>
+  </div>
+  <button class="btn big" type="button" data-act="test">${ic("bolt")}Test deterrent now</button>
+
+  <div class="sh"><span>Sound</span></div>
+  <div class="card group">
+    <div class="row"><div class="rl">${ic("sound")}<div><b>Play sounds</b><span>Picks from your sound library</span></div></div>${sw("snd-"+n.id,n.sound,`data-node="${n.id}" data-key="sound"`,"Play sounds")}</div>
+    <div class="row col ${n.sound?"":"disabled"}">
+      <div class="vhead"><span>Volume</span><b data-out="volume">${n.volume}% · ${volWord(n.volume)}</b></div>
+      <div class="vol"><button class="round" type="button" data-act="vol" data-d="-10" aria-label="Turn volume down">${ic("minus")}</button>
+        <input type="range" class="rng" id="rng-volume" min="0" max="100" step="5" value="${n.volume}" data-node="${n.id}" data-key="volume" aria-label="Volume" style="--pct:${n.volume}%">
+        <button class="round" type="button" data-act="vol" data-d="10" aria-label="Turn volume up">${ic("plus")}</button></div>
+      <button class="lnk" type="button" data-act="testsound" style="justify-self:start">Play a test sound</button>
+    </div>
+  </div>
+
+  <div class="sh"><span>Lights</span></div>
+  <div class="card group">
+    <div class="row"><div class="rl">${ic("light")}<div><b>Flash lights on detection</b><span>Bright LEDs startle animals at night</span></div></div>${sw("lit-"+n.id,n.lights,`data-node="${n.id}" data-key="lights"`,"Flash lights on detection")}</div>
+    <div class="row col ${n.lights?"":"disabled"}">
+      <span class="lab">Pattern</span>
+      <div class="seg" role="group" aria-label="Light pattern">${Object.keys(PAT).map(p=>`<button type="button" class="${n.pattern===p?"on":""}" data-act="pattern" data-p="${p}" aria-pressed="${n.pattern===p}">${PAT[p]}</button>`).join("")}</div>
+      <p class="hint">${{random:"Mixes strobe, pulse and chase so animals can't predict it.",strobe:"Fast on-off flashes.",pulse:"Lights fade up and down.",chase:"Left and right lights take turns."}[n.pattern]}</p>
+      <div class="vhead" style="margin-top:4px"><span>Brightness</span><b data-out="bright">${n.bright}%</b></div>
+      <input type="range" class="rng" id="rng-bright" min="20" max="100" step="10" value="${n.bright}" data-node="${n.id}" data-key="bright" aria-label="Brightness" style="--pct:${(n.bright-20)/80*100}%">
+      <button class="lnk" type="button" data-act="testlights" style="justify-self:start">Preview lights</button>
+    </div>
+  </div>
+
+  <div class="sh"><span>Detection</span></div>
+  <div class="card group">
+    <div class="row col"><div class="vhead"><span>Range</span><b data-out="range">${n.range} m</b></div>
+      <input type="range" class="rng" id="rng-range" min="2" max="6" step="1" value="${n.range}" data-node="${n.id}" data-key="range" aria-label="Detection range" style="--pct:${(n.range-2)/4*100}%">
+      <p class="hint">Shown as the circle on your yard map.</p></div>
+    <div class="row col"><span class="lab">Sensitivity</span>
+      <div class="seg" role="group" aria-label="Sensitivity">${["Low","Medium","High"].map(v=>`<button type="button" class="${n.sens===v?"on":""}" data-act="sens" data-v="${v}" aria-pressed="${n.sens===v}">${v}</button>`).join("")}</div>
+      <p class="hint">${SENS_HINT[n.sens]}</p></div>
+    <div class="row col"><span class="lab">Active hours</span>
+      <div class="seg" role="group" aria-label="Active hours"><button type="button" class="${n.hours==="always"?"on":""}" data-act="hours" data-v="always" aria-pressed="${n.hours==="always"}">${ic("clock")}All day</button><button type="button" class="${n.hours==="night"?"on":""}" data-act="hours" data-v="night" aria-pressed="${n.hours==="night"}">${ic("moon")}Dusk to dawn</button></div>
+      <p class="hint">${n.hours==="night"?"Watches from 5 PM to 7 AM, when deer are most active.":"Watches around the clock."}</p></div>
+  </div>
+
+  <div class="sh"><span>About this node</span></div>
+  <div class="card list kv">
+    <div class="lrow"><span class="lt">Model</span><span class="v">WildGuard Garden Sensor</span></div>
+    <div class="lrow"><span class="lt">Serial number</span><span class="v" style="font-family:var(--f-mono)">${n.serial}</span></div>
+    <div class="lrow"><span class="lt">Firmware</span><span class="v"><span class="okdot"></span>1.4.2 · up to date</span></div>
+    <div class="lrow"><span class="lt">Sensor</span><span class="v">Passive infrared (PIR)</span></div>
+    <div class="lrow"><span class="lt">Power</span><span class="v">Solar + charging port</span></div>
+  </div>`;
+}
+
+/* ---------------- render: sounds ---------------- */
+function presetOf(){const on=SOUNDS.filter(s=>state.snd[s.id]).map(s=>s.id).join();return TARGETS.find(t=>SOUNDS.filter(s=>s.best.includes(t)).map(s=>s.id).join()===on)||null;}
+function renderSounds(){
+  const onN=SOUNDS.filter(s=>state.snd[s.id]).length, pre=presetOf();
+  $("#v-sounds").innerHTML=`
+  <h1 class="ttl" style="margin-top:12px">Sounds</h1>
+  <p class="sub">${onN} of ${SOUNDS.length} sounds on · used by every node</p>
+  <div class="card group">
+    <div class="row"><div class="rl">${ic("shuffle")}<div><b>Shuffle sounds</b><span>Nodes rotate through the sounds you turn on, so animals don't get used to one.</span></div></div>${sw("rotate",state.rotate,`data-set="rotate"`,"Shuffle sounds")}</div>
+  </div>
+  <div class="sh"><span>Tune for</span>${pre?"":`<span style="text-transform:none;letter-spacing:0;font-family:var(--f-body);font-weight:600">Custom mix</span>`}</div>
+  <div class="chips" role="group" aria-label="Tune sounds for an animal">${TARGETS.map(t=>`<button type="button" class="chip ${pre===t?"on":""}" data-act="preset" data-t="${t}" aria-pressed="${pre===t}">${t}</button>`).join("")}</div>
+  ${CATS.map(([c,label])=>`<div class="sh"><span>${label}</span></div><div class="card">${SOUNDS.filter(s=>s.cat===c).map(s=>`
+    <div class="srow ${state.snd[s.id]?"":"offrow"}">
+      <button class="play" type="button" data-act="preview" data-sid="${s.id}" id="play-${s.id}" aria-label="Play ${s.name}">${ic("play")}<span class="eq"><i></i><i></i><i></i></span></button>
+      <div class="sinfo"><b>${s.name}</b><span>${s.dur} · Best for ${s.best.join(", ").toLowerCase()}</span></div>
+      ${sw("s-"+s.id,state.snd[s.id],`data-sound="${s.id}"`,s.name)}
+    </div>`).join("")}</div>`).join("")}
+  <p class="hint center" style="margin-top:16px">The full library has 100+ clips. This demo includes 12.</p>`;
+}
+
+/* ---------------- render: activity ---------------- */
+function weekData(){
+  const days=[];for(let i=6;i>=0;i--){const d=new Date();d.setDate(d.getDate()-i);days.push(d);}
+  const vals=state.week.concat([todayEvents().length]);
+  return days.map((d,i)=>({d,v:vals[i],today:i===6}));
+}
+function chartSVG(){
+  const data=weekData(), W=320,H=150, L=26,R=8,T=18,B=24, pw=W-L-R, ph=H-T-B;
+  const max=Math.max(4,Math.ceil(Math.max(...data.map(d=>d.v))/2)*2), bw=pw/7;
+  const y=v=>T+ph-(v/max)*ph;
+  let s=`<svg class="chart" viewBox="0 0 ${W} ${H}" role="img" aria-label="Visits per day this week: ${data.map(d=>d.v).join(", ")}">`;
+  [0,max/2,max].forEach(g=>{s+=`<line class="gl" x1="${L}" x2="${W-R}" y1="${y(g)}" y2="${y(g)}"/><text x="${L-6}" y="${y(g)+3.5}" text-anchor="end">${g}</text>`;});
+  data.forEach((d,i)=>{const x=L+i*bw+bw*.22, w=bw*.56, h=Math.max(0,(d.v/max)*ph);
+    s+=`<rect class="bar ${d.today?"today":""}" x="${x.toFixed(1)}" y="${(T+ph-h).toFixed(1)}" width="${w.toFixed(1)}" height="${h.toFixed(1)}" rx="4"/>`;
+    s+=`<text class="v" x="${(x+w/2).toFixed(1)}" y="${(T+ph-h-5).toFixed(1)}" text-anchor="middle">${d.v}</text>`;
+    s+=`<text class="${d.today?"today":""}" x="${(x+w/2).toFixed(1)}" y="${H-7}" text-anchor="middle">${d.today?"Today":d.d.toLocaleDateString([], {weekday:"short"})}</text>`;});
+  return s+`</svg>`;
+}
+function renderActivity(){
+  const data=weekData(), visits=data.reduce((a,d)=>a+d.v,0), te=todayEvents(), miss=state.weekMiss+te.filter(e=>e.kind==="miss").length;
+  const groups=[];state.log.forEach(e=>{const d=new Date(e.t);const k=d.toDateString();let g=groups.find(x=>x.k===k);if(!g){g={k,d,items:[]};groups.push(g);}g.items.push(e);});
+  const label=d=>sameDay(d,Date.now())?"Today":sameDay(d,Date.now()-864e5)?"Yesterday":d.toLocaleDateString([], {weekday:"long",month:"short",day:"numeric"});
+  const counts={};state.log.filter(e=>e.kind==="deter"||e.kind==="miss").forEach(e=>counts[e.node]=(counts[e.node]||0)+1);
+  const top=Object.keys(counts).sort((a,b)=>counts[b]-counts[a])[0]||"Vegetable Bed";
+  $("#v-activity").innerHTML=`
+  <h1 class="ttl" style="margin-top:12px">Activity</h1>
+  <p class="sub">Last 7 days · all nodes</p>
+  <div class="card"><div class="kpis"><div><b>${visits}</b><span>wildlife visits</span></div><div><b>${visits-miss}</b><span>turned away</span></div><div><b>5 s</b><span>average time to leave</span></div></div>${chartSVG()}</div>
+  <div class="card insight">${ic("clock")}<span>Most visits happen between 6 and 9 PM. ${esc(top)} gets the most visits, so it is a good spot for a second node.</span></div>
+  ${groups.map(g=>`<div class="sh"><span>${label(g.d)}</span></div><div class="card list">${g.items.map(logRow).join("")}</div>`).join("")}`;
+}
+
+/* ---------------- render: settings ---------------- */
+function themeSeg(){return `<div class="seg" role="group" aria-label="Appearance" data-themeseg>
+  <button type="button" data-theme-set="light">${ic("sun")}Light</button><button type="button" data-theme-set="dark">${ic("moon")}Dark</button><button type="button" data-theme-set="auto">${ic("auto")}Auto</button></div>`;}
+function renderSettings(){
+  $("#v-settings").innerHTML=`
+  <h1 class="ttl" style="margin-top:12px">Settings</h1>
+  <p class="sub">For all ${state.nodes.length} nodes in My Yard</p>
+  <div class="sh"><span>Appearance</span></div>
+  <div class="card group"><div class="row col">${themeSeg()}<p class="hint">Auto follows your phone's light or dark setting.</p></div></div>
+  <div class="sh"><span>Protection</span></div>
+  <div class="card group">
+    <div class="row"><div class="rl">${ic("moon")}<div><b>Quiet hours</b><span>Lights only, no sound, from 10 PM to 6 AM. Your neighbors will thank you.</span></div></div>${sw("quiet",state.quiet,`data-set="quiet"`,"Quiet hours")}</div>
+  </div>
+  <div class="sh"><span>Notifications</span></div>
+  <div class="card group">
+    <div class="row"><div class="rl">${ic("bell")}<div><b>Wildlife alerts</b><span>A notification each time a node fires</span></div></div>${sw("nAlerts",state.notify.alerts,`data-notify="alerts"`,"Wildlife alerts")}</div>
+    <div class="row"><div class="rl">${ic("chart")}<div><b>Daily summary</b><span>Every morning at 8 AM</span></div></div>${sw("nSummary",state.notify.summary,`data-notify="summary"`,"Daily summary")}</div>
+    <div class="row"><div class="rl">${ic("battery")}<div><b>Low battery</b><span>When a node drops below 20%</span></div></div>${sw("nBattery",state.notify.battery,`data-notify="battery"`,"Low battery")}</div>
+  </div>
+  <div class="sh"><span>Connection</span></div>
+  <div class="card list kv">
+    <div class="lrow"><span class="lt" style="display:flex;gap:10px;align-items:center">${ic("wifi")}Home Wi-Fi</span><span class="v"><span class="okdot"></span>Connected</span></div>
+    <div class="lrow"><span class="lt" style="display:flex;gap:10px;align-items:center">${ic("cloud")}WildGuard Cloud</span><span class="v"><span class="okdot"></span>Synced just now</span></div>
+    <div class="lrow"><span class="lt" style="display:flex;gap:10px;align-items:center">${ic("bt")}Bluetooth</span><span class="v">Used to add nodes</span></div>
+  </div>
+  <div class="card insight">${ic("info")}<span>New nodes pair with your phone over Bluetooth, then join your home Wi-Fi so you can control them from anywhere. A node too far from Wi-Fi relays through a nearby node by long-range radio.</span></div>
+  <div class="sh"><span>Nodes</span></div>
+  <div class="card list"><button class="lrow" type="button" data-act="add"><span class="li">${ic("plus")}</span><span class="lt"><b>Add a node</b><span>Takes about a minute</span></span>${ic("chev")}</button></div>
+  <div class="sh"><span>About</span></div>
+  <div class="card list kv">
+    <div class="lrow"><span class="lt">App version</span><span class="v">1.0 (demo)</span></div>
+    <div class="lrow"><span class="lt">WildGuard</span><span class="v">Smart Protection, Wild Solutions.</span></div>
+    <button class="lrow" type="button" data-act="restart"><span class="lt"><b style="color:var(--alert)">Restart demo</b><span>Puts every setting back to the start</span></span></button>
+  </div>`;
+}
+
+/* ---------------- pairing + rename sheet ---------------- */
+function renderSheet(){
+  const s=state.sheet, el=$("#sheet");if(!s){el.innerHTML="";return;}
+  const head=(stp,t)=>`<div class="grab"></div><div class="shead"><span class="stp">${stp}</span><button class="xbtn" type="button" data-act="closesheet" aria-label="Close">${ic("x")}</button></div><h2 id="sheetTitle">${t}</h2>`;
+  let h="";
+  if(s.type==="rename"){
+    const n=node(state.nodeOpen);
+    h=head("Rename","Rename node")+`<div class="field"><label for="renameInput">Name</label><input id="renameInput" maxlength="22" value="${esc(n?n.name:"")}" autocomplete="off"></div>
+      <div class="chips" style="margin:10px 0 6px">${["Herb Garden","Back Fence","Fruit Trees","Side Yard"].map(c=>`<button type="button" class="chip" data-act="namechip" data-v="${c}" data-for="renameInput">${c}</button>`).join("")}</div>
+      <button class="btn" type="button" data-act="saverename">Save</button>`;
+  } else {
+    const st=s.step;
+    if(st===1){h=head("Step 1 of 5","Turn on your sensor")+`<div class="pairart">${nodeSvg("pairing")}</div>
+      <p>Hold the button under the solar panel for 3 seconds, until the lights blink blue.</p>
+      <button class="btn" type="button" data-act="pairnext">The lights are blinking</button>`;}
+    else if(st===2){h=head("Step 2 of 5",s.found?"Sensor found":"Looking for sensors")+`<div class="pairart"><div class="radar"><i></i><i></i><i></i><span class="bt">${ic("bt")}</span></div></div>
+      <p>${s.found?"Tap Connect to pair it with this phone over Bluetooth.":"Searching over Bluetooth. Keep your phone within 10 m of the sensor."}</p>
+      ${s.found?`<div class="card found"><span class="npin">${DIAMOND}</span><span class="lt"><b>Garden Sensor</b><span>${s.serial} · about 2 m away</span></span><button class="btn" type="button" data-act="pairnext">Connect</button></div>`:""}`;}
+    else if(st===3){h=head("Step 3 of 5","Join your Wi-Fi")+`<p>Paired over Bluetooth. Now pick the network the sensor should use every day.</p>
+      <div class="card">
+        <button class="net" type="button" data-act="pickwifi">${ic("wifi")}<span class="lt"><b>Home Wi-Fi</b><span>Strong signal · 2.4 GHz</span></span>${ic("lock")}<span class="chk">${ic("check")}</span></button>
+        <div class="net dis" aria-disabled="true">${ic("wifi")}<span class="lt"><b>Home Wi-Fi 5G</b><span>5 GHz · sensors need a 2.4 GHz network</span></span>${ic("lock")}</div>
+        <div class="net dis" aria-disabled="true">${ic("wifi")}<span class="lt"><b>Neighbor-Guest</b><span>Weak signal</span></span></div>
+      </div>
+      <div class="field"><label for="pwInput">Wi-Fi password</label><input id="pwInput" type="password" value="wildguard2026" autocomplete="off"></div>
+      <button class="btn" type="button" data-act="pairnext">Join network</button>`;}
+    else if(st===4){const items=["Paired with this phone over Bluetooth","Joined Home Wi-Fi","Signed in to WildGuard Cloud","Firmware 1.4.2 is up to date"];
+      h=head("Step 4 of 5","Setting up")+`<p>This takes a few seconds. Keep the app open.</p><ul class="steps">${items.map((t,i)=>`<li class="${i<s.prog?"done":i===s.prog?"now":""}"><span class="sc">${i<s.prog?ic("check"):""}</span>${t}</li>`).join("")}</ul>`;}
+    else if(st===5){h=head("Step 5 of 5","Name your sensor")+`<p>Pick a name you will recognize, like the spot it protects.</p>
+      <div class="field"><label for="nameInput">Name</label><input id="nameInput" maxlength="22" value="${esc(s.name)}" autocomplete="off"></div>
+      <div class="chips" style="margin:10px 0 6px">${["Herb Garden","Back Fence","Fruit Trees","Side Yard"].map(c=>`<button type="button" class="chip" data-act="namechip" data-v="${c}" data-for="nameInput">${c}</button>`).join("")}</div>
+      <button class="btn" type="button" data-act="pairfinish">Finish</button>`;}
+    else if(st===6){h=`<div class="grab"></div><div class="donebig">${ic("check")}</div><h2 class="center">${esc(s.name)} is on</h2>
+      <p class="center">It is on your yard map and will flash and play sounds when it spots wildlife.</p>
+      <button class="btn" type="button" data-act="closesheet">Done</button>`;}
+  }
+  el.innerHTML=h;
+}
+function openSheet(s){
+  state.sheet=s;renderSheet();$("#scrim").hidden=false;
+  requestAnimationFrame(()=>requestAnimationFrame(()=>{$("#sheet").classList.add("in");$("#scrim").classList.add("in");}));
+  if(s.type==="pair")pairAuto();
+}
+function closeSheet(){
+  state.sheet=null;$("#sheet").classList.remove("in");$("#scrim").classList.remove("in");
+  later(()=>{if(!state.sheet){$("#scrim").hidden=true;$("#sheet").innerHTML="";}},380);
+}
+function pairAuto(){
+  const s=state.sheet;if(!s||s.type!=="pair")return;
+  if(s.step===2&&!s.found)later(()=>{if(state.sheet===s&&s.step===2){s.found=true;renderSheet();}},2200);
+  if(s.step===4){const tick=()=>{if(state.sheet!==s||s.step!==4)return;s.prog++;renderSheet();if(s.prog>=4)later(()=>{if(state.sheet===s){s.step=5;renderSheet();later(()=>{const i=$("#nameInput");if(i)i.select();},350);}},600);else later(tick,750);};later(tick,750);}
+}
+function startPair(){
+  if(state.nodes.length>=6){toast("This demo holds up to 6 nodes");return;}
+  const hex=Math.floor(Math.random()*65535).toString(16).toUpperCase().padStart(4,"0");
+  const used=state.nodes.map(n=>n.name);
+  openSheet({type:"pair",step:1,found:false,prog:0,serial:"WG-G1-"+hex,name:["Herb Garden","Back Fence","Fruit Trees","Side Yard"].find(x=>!used.includes(x))||"New Node"});
+}
+function finishPair(){
+  const s=state.sheet, i=$("#nameInput"), name=(i&&i.value.trim())||s.name;
+  s.name=name.slice(0,22);
+  const spot=SPOTS.find(p=>!state.nodes.some(n=>Math.abs(n.x-p.x)<20&&Math.abs(n.y-p.y)<20))||SPOTS[0];
+  const id="n"+Date.now();
+  state.nodes.push({id,name:s.name,armed:true,sound:true,volume:60,lights:true,pattern:"random",bright:80,range:4,sens:"Medium",hours:"always",battery:100,link:"wifi",sig:"Strong",serial:s.serial,x:spot.x,y:spot.y,last:0});
+  state.log.unshift({t:Date.now(),kind:"info",node:s.name,title:"Node added",detail:"Paired over Bluetooth and joined Home Wi-Fi."});
+  s.step=6;renderSheet();render();
+  const c=$("#card-"+id);if(c)c.classList.add("new");
+}
+
+/* ---------------- scene + detection ---------------- */
+const deerPos=$("#deerPos"), deerFlip=$("#deerFlip"), deerBob=$("#deerBob"), rig=$("#rig");
+let sceneNodeId="n1";
+function deerTo(x,face,ms,gait){
+  deerPos.style.transition=ms?`transform ${ms}ms ${gait==="run"?"cubic-bezier(.45,0,.9,.55)":"cubic-bezier(.25,.6,.4,1)"}`:"none";
+  deerPos.style.transform=`translate(${x}px,92px)`;
+  deerFlip.style.transform=face<0?"scaleX(-1)":"none";
+  deerBob.setAttribute("class",gait||"");
+}
+function setScene(n){sceneNodeId=n.id;$("#sceneName").textContent=n.name;const sel=$("#simNode");if(sel&&sel.value!==n.id)sel.value=n.id;}
+function scenePill(kind,text){const p=$("#scenePill");p.className="pill "+kind;p.lastElementChild.textContent=text;}
+function sceneSay(t){$("#sceneStatus").textContent=t;}
+function rigsFor(n){const r=[];if(sceneNodeId===n.id)r.push(rig);if(state.nodeOpen===n.id&&$("#appArt"))r.push($("#appArt"));return r;}
+function flash(n,pat,ms){rigsFor(n).forEach(el=>{el.classList.remove("flash","p-strobe","p-pulse","p-chase");void el.getBoundingClientRect();el.classList.add("flash","p-"+pat);el.style.setProperty("--b",n.bright/100);
+  later(()=>el.classList.remove("flash","p-"+pat),ms);});}
+function sounding(n,ms){rigsFor(n).forEach(el=>{el.classList.add("sounding");later(()=>el.classList.remove("sounding"),ms);});}
+function hitPin(n,miss){hits[n.id]={until:Date.now()+3200,miss};const p=$("#pin-"+n.id);if(p){p.classList.remove("hit","miss");void p.getBoundingClientRect();p.classList.add("hit");if(miss)p.classList.add("miss");}
+  const c=$("#card-"+n.id);if(c&&!miss){c.classList.remove("flashing");void c.offsetWidth;c.classList.add("flashing");}
+  later(()=>{const p2=$("#pin-"+n.id);if(p2)p2.classList.remove("hit","miss");const c2=$("#card-"+n.id);if(c2)c2.classList.remove("flashing");},3300);}
+function plan(n,test){
+  let reason="";
+  if(!test){if(!n.armed)reason="This node is turned off";else if(state.paused)reason="Protection is paused";else if(n.hours==="night"&&!isNight())reason="It is outside this node's active hours (dusk to dawn)";}
+  const quiet=!test&&state.quiet&&inQuiet();
+  const enabled=SOUNDS.filter(s=>state.snd[s.id]);
+  const useSound=!reason&&n.sound&&n.volume>0&&enabled.length>0&&!quiet;
+  const useLights=!reason&&n.lights;
+  if(!reason&&!useSound&&!useLights)reason=quiet&&n.sound?"Quiet hours are on and the lights are off":n.sound&&!enabled.length?"No sounds are on in the library and the lights are off":"Light and sound are both off";
+  let snd=null;
+  if(useSound){if(state.rotate){const pool=enabled.length>1?enabled.filter(s=>s.id!==state.lastSnd):enabled;snd=pool[Math.floor(Math.random()*pool.length)];}else{snd=enabled[state.rot%enabled.length];state.rot++;}state.lastSnd=snd.id;}
+  const pat=n.pattern==="random"?["strobe","pulse","chase"][Math.floor(Math.random()*3)]:n.pattern;
+  return {deter:!reason,reason,snd,useLights,pat,quiet,leave:2+Math.floor(Math.random()*4)};
+}
+function fire(n,test){
+  const p=plan(n,test);
+  setScene(n);
+  if(!test)hitPin(n,!p.deter);
+  if(p.useLights)flash(n,p.pat,3400);
+  if(p.snd){const d=playSound(p.snd.id,n.volume);sounding(n,Math.max(1200,d*1000));}
+  return p;
+}
+function what(p){
+  const pat=PAT[p.pat].toLowerCase();
+  if(p.snd&&p.useLights)return {short:`${p.snd.name} + ${pat} lights`,long:`Played ${p.snd.name.toLowerCase()} and flashed ${pat} lights.`};
+  if(p.snd)return {short:`${p.snd.name} only (lights off)`,long:`Played ${p.snd.name.toLowerCase()}.`};
+  return {short:`${PAT[p.pat]} lights only (${p.quiet?"quiet hours":"sound off"})`,long:`Flashed ${pat} lights${p.quiet?" (quiet hours, no sound)":""}.`};
+}
+function record(n,p){
+  n.last=Date.now();
+  if(p.deter){const w=what(p);state.log.unshift({t:Date.now(),kind:"deter",node:n.name,title:"Wildlife turned away",detail:`${w.short} · left after ${p.leave} s`});
+    banner(`Wildlife at ${n.name}`,`${w.long} It left after ${p.leave} seconds.`,n.id);}
+  else{state.log.unshift({t:Date.now(),kind:"miss",node:n.name,title:"Visit logged, no deterrent",detail:p.reason+"."});
+    banner(`Wildlife at ${n.name}`,`No deterrent fired. ${p.reason}.`,n.id);}
+  render();
+}
+async function sendDeer(){
+  if(busy)return;const n=node($("#simNode").value)||state.nodes[0];if(!n)return;
+  busy=true;const my=++runId;syncSim();
+  setScene(n);rig.classList.remove("detecting");scenePill("ok","Monitoring");
+  deerTo(640,-1,0);await wait(60);if(my!==runId)return;
+  deerTo(332,-1,2200,"walk");sceneSay("A deer is walking toward the garden…");
+  await wait(2250);if(my!==runId)return;
+  deerBob.setAttribute("class","");rig.classList.add("detecting");
+  const p=fire(n,false);
+  if(p.deter){
+    const w=what(p);scenePill("warn","Deterring");sceneSay(`Motion detected. ${w.long}`);
+    await wait(700);if(my!==runId)return;
+    deerTo(660,1,1300,"run");await wait(1500);if(my!==runId)return;
+    record(n,p);
+    await wait(1400);if(my!==runId)return;
+    rig.classList.remove("detecting");scenePill("ok","Monitoring");sceneSay(`The deer left. ${n.name} is watching again.`);
+  }else{
+    scenePill("mute","Logged only");sceneSay(`Motion detected, but no deterrent fired. ${p.reason}.`);
+    rig.classList.remove("detecting");
+    deerTo(236,-1,1500,"walk");await wait(1550);if(my!==runId)return;
+    deerBob.setAttribute("class","graze");await wait(2600);if(my!==runId)return;
+    record(n,p);
+    deerTo(660,1,2600,"walk");await wait(2700);if(my!==runId)return;
+    scenePill("ok","Monitoring");sceneSay("The deer had a snack and wandered off. Turn protection on and try again.");
+  }
+  busy=false;syncSim();
+}
+function syncSim(){
+  const sel=$("#simNode"), cur=sel.value||sceneNodeId;
+  sel.innerHTML=state.nodes.map(n=>`<option value="${n.id}">${esc(n.name)}${n.armed?"":" (off)"}</option>`).join("");
+  sel.value=state.nodes.some(n=>n.id===cur)?cur:state.nodes[0].id;
+  $("#simGo").disabled=busy;
+  const sn=node(sceneNodeId);if(sn)$("#sceneName").textContent=sn.name;
+}
+
+/* ---------------- overlays ---------------- */
+let bT=0,tT=0;
+function banner(title,body,id){
+  if(!state.notify.alerts)return;
+  const b=$("#banner");b.dataset.id=id;
+  b.innerHTML=`<span class="bn-ic">${LOGO}</span><span class="bn-t"><span class="bn-h"><span>WildGuard</span><span>now</span></span><b>${esc(title)}</b><span>${esc(body)}</span></span>`;
+  b.classList.add("show");clearTimeout(bT);bT=later(()=>b.classList.remove("show"),5600);
+}
+function toast(t,icn="check"){const el=$("#toast");el.innerHTML=ic(icn)+esc(t);el.classList.add("show");clearTimeout(tT);tT=later(()=>el.classList.remove("show"),2400);}
+
+/* ---------------- navigation ---------------- */
+function setTab(t){
+  if(state.nodeOpen)closeNode(true);
+  state.tab=t;
+  ["home","sounds","activity","settings"].forEach(k=>{$("#v-"+k).hidden=k!==t;});
+  $$(".tabbar button").forEach(b=>{if(b.dataset.tab===t)b.setAttribute("aria-current","page");else b.removeAttribute("aria-current");});
+  $("#v-"+t).scrollTop=0;
+}
+function openNode(id){
+  if(!node(id))return;
+  state.nodeOpen=id;renderNode();const v=$("#v-node");v.scrollTop=0;v.classList.add("in");v.removeAttribute("aria-hidden");
+  setScene(node(id));
+  later(()=>{const b=$("#v-node .back");if(b)b.focus({preventScroll:true});},360);
+}
+function closeNode(instant){
+  const v=$("#v-node");v.classList.remove("in");v.setAttribute("aria-hidden","true");state.nodeOpen=null;
+  if(!instant)later(()=>{if(!state.nodeOpen)v.innerHTML="";},360);else v.innerHTML="";
+}
+
+/* ---------------- render all ---------------- */
+function render(){
+  const f=document.activeElement, fid=f&&f.id;
+  renderHome();renderSounds();renderActivity();renderSettings();if(state.nodeOpen)renderNode();
+  syncSim();syncTheme();
+  if(fid&&fid!=="simNode"){const el=document.getElementById(fid);if(el&&el!==f)el.focus({preventScroll:true});}
+}
+const soon=()=>{clearTimeout(renderT);renderT=setTimeout(render,230);};
+
+/* ---------------- theme ---------------- */
+const HOST_THEME=document.documentElement.getAttribute("data-theme");
+function applyTheme(){
+  const r=document.documentElement;
+  if(state.theme==="auto"){if(HOST_THEME)r.setAttribute("data-theme",HOST_THEME);else r.removeAttribute("data-theme");}
+  else r.setAttribute("data-theme",state.theme);
+  try{localStorage.setItem("wg-theme",state.theme);}catch(e){}
+  syncTheme();
+}
+function syncTheme(){$$("[data-theme-set]").forEach(b=>{const on=b.dataset.themeSet===state.theme;b.classList.toggle("on",on);b.setAttribute("aria-pressed",on);});}
+
+/* ---------------- events ---------------- */
+document.addEventListener("click",e=>{
+  if(e.target.closest(".sw"))return;
+  const th=e.target.closest("[data-theme-set]");if(th){state.theme=th.dataset.themeSet;applyTheme();return;}
+  const el=e.target.closest("[data-act]");if(!el)return;
+  const a=el.dataset.act, n=state.nodeOpen?node(state.nodeOpen):null;
+  switch(a){
+    case "tab":setTab(el.dataset.tab);break;
+    case "open":openNode(el.dataset.id);break;
+    case "back":closeNode();break;
+    case "banner":el.classList.remove("show");if(el.dataset.id){setTab("home");openNode(el.dataset.id);}break;
+    case "add":startPair();break;
+    case "pause":state.paused=true;state.pauseUntil=Date.now()+60*MIN;render();toast("Paused for 1 hour","pause");break;
+    case "resume":state.paused=false;render();toast("Protection is back on","shield");break;
+    case "restart":restart();break;
+    case "vol":if(n){n.volume=Math.max(0,Math.min(100,n.volume+ +el.dataset.d));render();}break;
+    case "pattern":if(n){n.pattern=el.dataset.p;render();flash(n,n.pattern==="random"?["strobe","pulse","chase"][Math.floor(Math.random()*3)]:n.pattern,2200);}break;
+    case "sens":if(n){n.sens=el.dataset.v;render();}break;
+    case "hours":if(n){n.hours=el.dataset.v;render();}break;
+    case "test":if(n){const p=fire(n,true);if(!p.deter)toast("Turn on light or sound first","info");else toast("Test: "+what(p).short,"bolt");}break;
+    case "testsound":if(n){const en=SOUNDS.filter(s=>state.snd[s.id]);if(!en.length){toast("Turn on a sound in the library","info");break;}const s=en[Math.floor(Math.random()*en.length)];const d=playSound(s.id,n.volume);setScene(n);sounding(n,d*1000);toast(`${s.name} at ${n.volume}%`,"sound");}break;
+    case "testlights":if(n){setScene(n);flash(n,n.pattern==="random"?"chase":n.pattern,2600);}break;
+    case "rename":openSheet({type:"rename"});later(()=>{const i=$("#renameInput");if(i)i.select();},400);break;
+    case "saverename":{const i=$("#renameInput"),v=i&&i.value.trim();if(n&&v){const old=n.name;n.name=v.slice(0,22);state.log.forEach(x=>{if(x.node===old)x.node=n.name;});}closeSheet();render();toast("Name saved");break;}
+    case "namechip":{const i=document.getElementById(el.dataset.for);if(i){i.value=el.dataset.v;i.focus();}break;}
+    case "closesheet":case "scrim":if(state.sheet&&state.sheet.type==="pair"&&state.sheet.step===4)break;closeSheet();break;
+    case "pairnext":{const s=state.sheet;if(!s)break;s.step++;renderSheet();pairAuto();break;}
+    case "pickwifi":break;
+    case "pairfinish":finishPair();break;
+    case "preset":{const t=el.dataset.t;SOUNDS.forEach(s=>state.snd[s.id]=s.best.includes(t));render();toast(`Sounds tuned for ${t.toLowerCase()}`);break;}
+    case "preview":{const id=el.dataset.sid;const d=playSound(id,65);el.classList.add("playing");later(()=>{const b=$("#play-"+id);if(b)b.classList.remove("playing");},d*1000);if(!state.audioOn)toast("Sound is off on this computer","sound");break;}
+  }
+});
+document.addEventListener("keydown",e=>{
+  if((e.key==="Enter"||e.key===" ")&&e.target.matches(".pin")){e.preventDefault();openNode(e.target.dataset.id);}
+  if(e.key==="Escape"){if(state.sheet)closeSheet();else if(state.nodeOpen)closeNode();}
+});
+document.addEventListener("input",e=>{
+  const t=e.target;if(!t.matches("input[type=range][data-key]"))return;
+  const n=node(t.dataset.node);if(!n)return;const k=t.dataset.key, v=+t.value;n[k]=v;
+  const min=+t.min,max=+t.max;t.style.setProperty("--pct",((v-min)/(max-min)*100)+"%");
+  const o=$(`[data-out="${k}"]`);if(o)o.textContent=k==="volume"?`${v}% · ${volWord(v)}`:k==="range"?`${v} m`:`${v}%`;
+  if(k==="bright"){$$(".flash").forEach(x=>x.style.setProperty("--b",v/100));}
+});
+document.addEventListener("change",e=>{
+  const t=e.target;
+  if(t.id==="audioOn"){state.audioOn=t.checked;if(t.checked)actx();return;}
+  if(t.id==="simNode"){const n=node(t.value);if(n&&!busy)setScene(n);return;}
+  if(t.matches("input[type=range][data-key]")){render();return;}
+  if(t.matches("input[type=checkbox][data-key]")){const n=node(t.dataset.node);if(n){n[t.dataset.key]=t.checked;soon();}return;}
+  if(t.matches("input[data-sound]")){state.snd[t.dataset.sound]=t.checked;soon();return;}
+  if(t.matches("input[data-set]")){state[t.dataset.set]=t.checked;soon();if(t.dataset.set==="quiet"&&t.checked)toast(inQuiet()?"Quiet hours are on now":"Quiet hours set for 10 PM","moon");return;}
+  if(t.matches("input[data-notify]")){state.notify[t.dataset.notify]=t.checked;return;}
+});
+$("#simGo").addEventListener("click",()=>{actx();sendDeer();});
+$("#restart").addEventListener("click",restart);
+
+/* ---------------- sizing ---------------- */
+function fit(){
+  const W=window.innerWidth,H=window.innerHeight,r=document.documentElement;
+  const mobile=W<760;r.classList.toggle("m",mobile);
+  if(mobile)return;
+  const pg=$("#page"),cs=getComputedStyle(pg),gap=parseFloat(cs.columnGap)||0,pad=(parseFloat(cs.paddingLeft)||0)+(parseFloat(cs.paddingRight)||0);
+  const lw=$(".left").getBoundingClientRect().width,rw=$(".right").getBoundingClientRect().width;
+  const availW=W>=1150?W-pad-lw-rw-2*gap:W>=1000?W-pad-lw-gap:W-pad;
+  const availH=H-48;
+  const s=Math.max(.5,Math.min(1.3,availH/868,availW/414));
+  r.style.setProperty("--s",s.toFixed(4));
+}
+window.addEventListener("resize",fit);
+
+/* ---------------- clock + restart ---------------- */
+function tick(){
+  const d=new Date();let h=d.getHours()%12||12;$("#sbTime").textContent=h+":"+String(d.getMinutes()).padStart(2,"0");
+  if(state.paused&&Date.now()>state.pauseUntil){state.paused=false;render();}
+}
+function splash(){const s=$("#splash");s.classList.remove("gone");later(()=>s.classList.add("gone"),1300);}
+function restart(){
+  timers.forEach(clearTimeout);timers=[];runId++;busy=false;hits={};
+  state=freshState(state);
+  $("#banner").classList.remove("show");$("#toast").classList.remove("show");
+  $("#sheet").classList.remove("in");$("#scrim").classList.remove("in");$("#scrim").hidden=true;$("#sheet").innerHTML="";
+  closeNode(true);rig.className.baseVal="";rig.removeAttribute("class");
+  sceneNodeId="n1";deerTo(640,-1,0);scenePill("ok","Monitoring");sceneSay("Vegetable Bed is watching for motion.");
+  $("#audioOn").checked=state.audioOn;
+  setTab("home");render();splash();
+}
+
+/* ---------------- boot ---------------- */
+$("#sceneNode").innerHTML=NODE_ART;
+state=freshState(null);
+try{const t=localStorage.getItem("wg-theme");if(t==="light"||t==="dark"||t==="auto")state.theme=t;}catch(e){}
+applyTheme();fit();setTab("home");render();tick();setInterval(tick,15000);
+splash();
+})();
+</script>
+
+</html>
